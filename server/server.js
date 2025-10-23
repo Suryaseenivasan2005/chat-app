@@ -115,6 +115,7 @@ app.use("/api/groups", groupRouter)
 
 // Connect to MongoDB first, then start the server
 const startServer = async () => {
+  if(process.env.NODE_ENV !== "production"){
     try {
         await connectDB();
         const PORT = process.env.PORT || 5000;
@@ -124,6 +125,11 @@ const startServer = async () => {
         process.exit(1);
     }
 };
+};
+
+// Export server for vercel
+
+export default server;
 
 startServer();
 
