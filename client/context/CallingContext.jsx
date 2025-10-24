@@ -172,17 +172,20 @@ export const CallingProvider = ({ children }) => {
         throw new Error('getUserMedia is not supported in this browser');
       }
       
-      // Get user media with better error handling (audio only initially)
+      // Decide whether to request video based on incomingCallData.isVideoCall
+      const wantVideo = !!incomingCallData.isVideoCall;
+      
+      // Get user media with video if requested
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true
         }, 
-        video: false // Start with voice call only
+        video: wantVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } } : false
       });
       localStream.current = stream;
-      setIsVideoOn(false); // Start with video disabled
+      setIsVideoOn(!!wantVideo); // Set initial video state
       
       // Create peer connection
       const pc = new RTCPeerConnection({
@@ -190,7 +193,7 @@ export const CallingProvider = ({ children }) => {
       });
       peerConnection.current = pc;
       
-      // Add local stream to peer connection
+      // Add local stream tracks to peer connection
       stream.getTracks().forEach(track => {
         pc.addTrack(track, stream);
       });
@@ -210,6 +213,9 @@ export const CallingProvider = ({ children }) => {
         remoteStream.current = event.streams[0];
         if (remoteAudio.current) {
           remoteAudio.current.srcObject = event.streams[0];
+        }
+        if (remoteVideo.current) {
+          remoteVideo.current.srcObject = event.streams[0];
         }
         setCallStatus('connected');
         startCallTimer();
@@ -568,13 +574,13 @@ export const CallingProvider = ({ children }) => {
     if (!socket) return;
     
     // Handle incoming call
-    socket.on('call_initiate', async ({ caller, receiver, offer }) => {
+    socket.on('call_initiate', async ({ caller, receiver, offer, isVideoCall }) => {
       if (!caller || !receiver) {
         console.error('Invalid call data received');
         return;
       }
-      
-      const incomingCallData = { caller, receiver, offer };
+
+      const incomingCallData = { caller, receiver, offer, isVideoCall };
       setCallData(incomingCallData);
       setCallStatus('ringing');
       setIsInCall(true);

@@ -389,13 +389,13 @@ export const sendMessage = async (req, res) => {
         seen: true
       });
 
-      const senderSocketId = userSocketMap[senderId];
+      const senderSocketId = userSocketMap[senderId.toString()];
       if (senderSocketId) {
         io.to(senderSocketId).emit("newMessage", aiMessage);
       }
     }
 
-    const receiverSocketId = userSocketMap[receiverId];
+    const receiverSocketId = userSocketMap[receiverId.toString()];
     if (receiverSocketId) {
       io.to(receiverSocketId).emit("newMessage", newMessage);
     }

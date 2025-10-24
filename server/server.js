@@ -58,12 +58,12 @@ io.on("connection", (socket) => {
         if (toSocket) io.to(toSocket).emit("stop_recording", { from: userId });
     });
     
-    // Voice call events
-    socket.on("call_initiate", ({ to, caller, receiver, offer }) => {
-        if (!to) return;
-        const toSocket = userSocketMap[to];
-        if (toSocket) io.to(toSocket).emit("call_initiate", { from: userId, caller, receiver, offer });
-    });
+  // Voice / Video call events
+  socket.on("call_initiate", ({ to, caller, receiver, offer, isVideoCall }) => {
+    if (!to) return;
+    const toSocket = userSocketMap[to];
+    if (toSocket) io.to(toSocket).emit("call_initiate", { from: userId, caller, receiver, offer, isVideoCall });
+  });
     
     socket.on("call_offer", ({ to, offer }) => {
         if (!to) return;

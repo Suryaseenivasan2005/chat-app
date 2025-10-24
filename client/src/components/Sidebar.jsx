@@ -97,10 +97,8 @@ const Sidebar = () => {
                   e.target.src = assets.avatar_icon;
                 }}
               />
-              {!user.isBot && (
-                <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] 
-                  ${onlineUsers.includes(user._id) ? 'bg-green-500' : 'bg-gray-500'}
-                  transition-colors duration-300`}>
+              {!user.isBot && onlineUsers.includes(user._id) && (
+                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] bg-green-500 transition-colors duration-300">
                 </div>
               )}
             </div>
