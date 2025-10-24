@@ -12,40 +12,29 @@ import { Server } from "socket.io"
 const app = express();
 const server = http.createServer(app)
 
-// Initalize socket.io server
+// Initialize socket.io server with proper CORS and timeout settings
 export const io = new Server(server, {
-    cors: {origin: "*"}
+    cors: {
+        origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://vettipechu.vercel.app"],
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000
 })
 
 // store online users
 export const userSocketMap = {}; //{userId : socketId}
 
 // Socket.io connection handler
-io.on("connection", (socket)=>{
+io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
-    console.log("user Connected", userId);
+    console.log("User Connected:", userId);
 
-    if(userId) {
+    if (userId) {
         userSocketMap[userId] = socket.id;
-        // Broadcast user's online status immediately
         io.emit("getOnlineUsers", Object.keys(userSocketMap));
     }
-
-    // Handle explicit online status
-    socket.on("user_online", (uid) => {
-        if(uid && uid === userId) {
-            userSocketMap[userId] = socket.id;
-            io.emit("getOnlineUsers", Object.keys(userSocketMap));
-        }
-    });
-
-    // Handle away status
-    socket.on("user_away", (uid) => {
-        if(uid && uid === userId) {
-            delete userSocketMap[userId];
-            io.emit("getOnlineUsers", Object.keys(userSocketMap));
-        }
-    });
 
     // typing indicator events
     socket.on("typing", ({ to }) => {
@@ -106,11 +95,13 @@ io.on("connection", (socket)=>{
         if (toSocket) io.to(toSocket).emit("call_rejected", { from: userId });
     });
 
-    socket.on("disconnect",()=>{
-        console.log("User Disconnected", userId);
-        delete userSocketMap[userId];
-        io.emit("getOnlineUsers", Object.keys(userSocketMap))
-    })
+    socket.on("disconnect", () => {
+        if (userId) {
+            console.log("User Disconnected:", userId);
+            delete userSocketMap[userId];
+            io.emit("getOnlineUsers", Object.keys(userSocketMap));
+        }
+    });
 })
 
 // Middleware setup

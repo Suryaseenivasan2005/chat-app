@@ -97,9 +97,12 @@ const Sidebar = () => {
                   e.target.src = assets.avatar_icon;
                 }}
               />
-              <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] ${
-                onlineUsers.includes(user._id) ? 'bg-green-500' : 'bg-gray-500'
-              }`}></div>
+              {!user.isBot && (
+                <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] 
+                  ${onlineUsers.includes(user._id) ? 'bg-green-500' : 'bg-gray-500'}
+                  transition-colors duration-300`}>
+                </div>
+              )}
             </div>
             <div className="flex flex-col leading-5">
               <p>
@@ -107,9 +110,13 @@ const Sidebar = () => {
                 {user.fullName}
               </p>
               {!user.isBot && (
-                onlineUsers.includes(user._id)
-                  ? <span className='text-green-400 text-xs' style={{color: '#90EE90'}}>Online</span>
-                  : <span className='text-neutral-400 text-xs'>Offline</span>
+                <span className={`text-xs transition-colors duration-300 ${
+                  onlineUsers.includes(user._id) 
+                    ? 'text-green-400' 
+                    : 'text-neutral-400'
+                }`}>
+                  {onlineUsers.includes(user._id) ? 'Online' : 'Offline'}
+                </span>
               )}
             </div>
 
