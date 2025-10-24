@@ -79,16 +79,72 @@ export const AuthProvider = ({ children }) => {
   };
 
   const connectSocket = (userData) => {
-    if (!userData || socket?.connected) return;
+    if (!userData) return;
+    
+    // Disconnect existing socket if any
+    if (socket?.connected) {
+      socket.disconnect();
+    }
+    
+    // Create and connect new socket
     const newSocket = io(backendUrl, {
       query: { userId: userData._id },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
+    
     newSocket.connect();
-    setSocket(newSocket);
-
+    
+    // Socket event handlers
+    newSocket.on("connect", () => {
+      console.log("Socket connected");
+      // Emit online status when connected
+      newSocket.emit("user_online", userData._id);
+    });
+    
+    newSocket.on("disconnect", () => {
+      console.log("Socket disconnected");
+      // Clear online users when disconnected
+      setOnlineUsers([]);
+    });
+    
     newSocket.on("getOnlineUsers", (userIds) => {
       setOnlineUsers(userIds);
     });
+    
+    newSocket.on("connect_error", (error) => {
+      console.log("Socket connection error:", error);
+      toast.error("Connection lost. Reconnecting...");
+    });
+    
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // User left the page
+        newSocket.emit("user_away", userData._id);
+      } else {
+        // User is back
+        newSocket.emit("user_online", userData._id);
+      }
+    };
+    
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    // Set socket in state
+    setSocket(newSocket);
+    
+    // Cleanup function
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (newSocket) {
+        newSocket.off("connect");
+        newSocket.off("disconnect");
+        newSocket.off("getOnlineUsers");
+        newSocket.off("connect_error");
+        newSocket.disconnect();
+      }
+    };
   };
 
   const value = {

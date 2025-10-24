@@ -25,10 +25,27 @@ io.on("connection", (socket)=>{
     const userId = socket.handshake.query.userId;
     console.log("user Connected", userId);
 
-    if(userId) userSocketMap[userId] = socket.id;
+    if(userId) {
+        userSocketMap[userId] = socket.id;
+        // Broadcast user's online status immediately
+        io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    }
 
-    // emmit online users to all  connectedclients
-    io.emit("getOnlineUsers", Object.keys(userSocketMap));
+    // Handle explicit online status
+    socket.on("user_online", (uid) => {
+        if(uid && uid === userId) {
+            userSocketMap[userId] = socket.id;
+            io.emit("getOnlineUsers", Object.keys(userSocketMap));
+        }
+    });
+
+    // Handle away status
+    socket.on("user_away", (uid) => {
+        if(uid && uid === userId) {
+            delete userSocketMap[userId];
+            io.emit("getOnlineUsers", Object.keys(userSocketMap));
+        }
+    });
 
     // typing indicator events
     socket.on("typing", ({ to }) => {

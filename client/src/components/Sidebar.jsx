@@ -86,12 +86,21 @@ const Sidebar = () => {
               ${selectedUser?._id === user._id ? 'bg-[#282142]/50' : ''}
             `}
           >
-            <img
-              src={user?.isBot ? assets.Chitti : (user?.profilePic || assets.avatar_icon)}
-              alt={`${user.fullName}'s profile`}
-              className="w-[35px] aspect-[1/1] rounded-full object-cover"
-              onError={(e) => { e.target.src = assets.avatar_icon }}
-            />
+            <div className="relative w-[35px] h-[35px]">
+              <img
+                src={user?.isBot ? assets.Chitti : (user?.profilePic || assets.avatar_icon)}
+                alt={`${user.fullName}'s profile`}
+                className="w-full h-full rounded-full object-cover"
+                onError={(e) => {
+                  console.log('Profile pic load error:', e.target.src);
+                  e.target.onerror = null; // Prevent infinite loop
+                  e.target.src = assets.avatar_icon;
+                }}
+              />
+              <div className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] ${
+                onlineUsers.includes(user._id) ? 'bg-green-500' : 'bg-gray-500'
+              }`}></div>
+            </div>
             <div className="flex flex-col leading-5">
               <p>
                 {user.isBot ? '🤖 ' : ''}

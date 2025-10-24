@@ -5,7 +5,7 @@ import cloudinary from "../lib/cloudinary.js";
 
 // Signup a new user
 export const signup = async (req, res) => {
-    const { fullName, email, password, bio } = req.body;
+    const { fullName, email, password, bio, profilePic } = req.body;
 
     try {
         if (!fullName || !email || !password || !bio) {
@@ -19,8 +19,25 @@ export const signup = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
+        // Handle profile picture
+        let profilePicUrl = "";
+        if (profilePic) {
+            if (profilePic.startsWith('data:')) {
+                // If it's a base64 image, upload to cloudinary
+                const upload = await cloudinary.uploader.upload(profilePic);
+                profilePicUrl = upload.secure_url;
+            } else {
+                // If it's a URL (from our default avatars), use it directly
+                profilePicUrl = profilePic;
+            }
+        }
+
         const newUser = await User.create({
-            fullName, email, password: hashedPassword, bio
+            fullName,
+            email, 
+            password: hashedPassword,
+            bio,
+            profilePic: profilePicUrl
         });
 
         const token = generateToken(newUser._id);
