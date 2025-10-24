@@ -480,19 +480,50 @@ export const CallingProvider = ({ children }) => {
         // Upgrade to video call - add video track
         const videoStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            frameRate: { ideal: 30 }
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            frameRate: { max: 30 }
           }
         });
         
         // Add video track to existing stream
         const videoTrack = videoStream.getVideoTracks()[0];
+        
+        // Remove any existing video tracks first
+        const existingVideoTracks = localStream.current.getVideoTracks();
+        existingVideoTracks.forEach(track => {
+          localStream.current.removeTrack(track);
+          track.stop();
+        });
+        
+        // Add the new video track
         localStream.current.addTrack(videoTrack);
         
-        // Add track to peer connection
+        // Update the peer connection
         if (peerConnection.current) {
-          peerConnection.current.addTrack(videoTrack, localStream.current);
+          const senders = peerConnection.current.getSenders();
+          const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+          
+          if (videoSender) {
+            await videoSender.replaceTrack(videoTrack);
+          } else {
+            peerConnection.current.addTrack(videoTrack, localStream.current);
+          }
+          
+          // Create and send new offer
+          const offer = await peerConnection.current.createOffer();
+          await peerConnection.current.setLocalDescription(offer);
+          
+          if (socket && callData) {
+            const otherUserId = callData.caller._id === authUser._id 
+              ? callData.receiver._id 
+              : callData.caller._id;
+            
+            socket.emit('call_offer', {
+              to: otherUserId,
+              offer: peerConnection.current.localDescription
+            });
+          }
         }
         
         // Set local video stream
@@ -509,6 +540,15 @@ export const CallingProvider = ({ children }) => {
           track.stop();
           localStream.current.removeTrack(track);
         });
+        
+        if (peerConnection.current) {
+          const senders = peerConnection.current.getSenders();
+          const videoSender = senders.find(sender => sender.track && sender.track.kind === 'video');
+          if (videoSender) {
+            videoSender.track.stop();
+            peerConnection.current.removeTrack(videoSender);
+          }
+        }
         
         setIsVideoOn(false);
         toast.success('Video disabled');
@@ -589,17 +629,49 @@ export const CallingProvider = ({ children }) => {
     return () => {
       // Clean up any existing streams
       if (localStream.current) {
-        localStream.current.getTracks().forEach(track => track.stop());
+        localStream.current.getTracks().forEach(track => {
+          track.stop();
+          localStream.current.removeTrack(track);
+        });
+        localStream.current = null;
       }
+      
+      // Clean up peer connection
       if (peerConnection.current) {
+        peerConnection.current.getSenders().forEach(sender => {
+          if (sender.track) {
+            sender.track.stop();
+          }
+        });
         peerConnection.current.close();
+        peerConnection.current = null;
       }
+      
+      // Clean up video elements
+      if (localVideo.current) {
+        localVideo.current.srcObject = null;
+      }
+      if (remoteVideo.current) {
+        remoteVideo.current.srcObject = null;
+      }
+      if (remoteAudio.current) {
+        remoteAudio.current.srcObject = null;
+      }
+      
+      // Clear timers
       if (timerInterval.current) {
         clearInterval(timerInterval.current);
+        timerInterval.current = null;
       }
       if (callTimeout.current) {
         clearTimeout(callTimeout.current);
+        callTimeout.current = null;
       }
+      
+      // Reset state
+      setIsVideoOn(false);
+      setIsMuted(false);
+      setIsSpeakerOn(true);
     };
   }, []);
 

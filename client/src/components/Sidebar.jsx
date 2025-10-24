@@ -9,6 +9,7 @@ const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, unseenMessages = {} } = useContext(ChatContext);
   const { logout, onlineUsers } = useContext(AuthContext);
   const [input, setInput] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,15 +27,40 @@ const Sidebar = () => {
         <div className="flex justify-between items-center">
           <img src={img99} alt="logo" className="max-w-10 rounded-xl" />
           <p>Vetti Pechu</p>
-          <div className="relative py-2 group">
-            <img src={assets.menu_icon} alt="menu" className="max-h-7 cursor-pointer" />
-            <div className="absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#282142] border border-gray-600 text-gray-100 hidden group-hover:block">
-              <p onClick={() => navigate('/profile')} className='cursor-pointer text-sm'>Edit Profile</p>
-              <hr className="my-2 border-t border-gray-500" />
-              <p onClick={() => navigate('/groups/create')} className='cursor-pointer text-sm'>Create Group</p>
-              <hr className="my-2 border-t border-gray-500" />
-              <p onClick={logout} className='cursor-pointer text-sm'>Logout</p>
-            </div>
+          <div className="relative py-2">
+            <img 
+              src={assets.menu_icon} 
+              alt="menu" 
+              className="max-h-7 cursor-pointer" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu(!showMenu);
+              }}
+            />
+            {showMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowMenu(false)}
+                ></div>
+                <div className="absolute top-full right-0 z-20 w-32 p-5 rounded-md bg-[#282142] border border-gray-600 text-gray-100">
+                  <p onClick={() => {
+                    navigate('/profile');
+                    setShowMenu(false);
+                  }} className='cursor-pointer text-sm'>Edit Profile</p>
+                  <hr className="my-2 border-t border-gray-500" />
+                  <p onClick={() => {
+                    navigate('/groups/create');
+                    setShowMenu(false);
+                  }} className='cursor-pointer text-sm'>Create Group</p>
+                  <hr className="my-2 border-t border-gray-500" />
+                  <p onClick={() => {
+                    logout();
+                    setShowMenu(false);
+                  }} className='cursor-pointer text-sm'>Logout</p>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
