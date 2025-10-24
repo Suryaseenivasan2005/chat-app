@@ -125,9 +125,19 @@ const startServer = async () => {
     }
 };
 
-// Start server in development mode
+// In production (Vercel) we shouldn't call `server.listen` because Vercel
+// handles the server lifecycle. But we must ensure a MongoDB connection is
+// initiated so Mongoose does not buffer operations and timeout. Start the
+// DB connection on module load and only start the HTTP listener in
+// development.
 if (process.env.NODE_ENV !== 'production') {
-    startServer();
+  // Development: connect and then start the HTTP server
+  startServer();
+} else {
+  // Production (Vercel): initiate DB connection but do not call listen()
+  connectDB().catch((err) => {
+    console.error('Failed to connect to MongoDB in production:', err);
+  });
 }
 
 // Export server for Vercel
