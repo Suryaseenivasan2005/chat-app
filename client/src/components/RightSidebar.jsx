@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import video_call from '../assets/video_call.png';
 
 const RightSidebar = ({ selectedUser }) => {
-  const { messages, sendMessage } = useContext(ChatContext);
+  const { messages, sendMessage, users, setSelectedUser } = useContext(ChatContext);
   const { onlineUsers, authUser } = useContext(AuthContext);
   const { initiateCall, initiateVideoCall, isInCall } = useContext(CallingContext);
 
@@ -124,6 +124,9 @@ const RightSidebar = ({ selectedUser }) => {
       <button className="absolute bottom-5 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-purple-400 to-violet-600 text-white border-none text-sm font-light py-2 px-20 rounded-full cursor-pointer">
         Logout
       </button>
+
+      {/* Bumble Bee Floating Button */}
+      {/* Removed bot floating button from right sidebar - bot is available in main sidebar */}
     </div>
   );
 };

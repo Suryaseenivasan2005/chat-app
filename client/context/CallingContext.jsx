@@ -382,12 +382,21 @@ export const CallingProvider = ({ children }) => {
           frameRate: { ideal: 30 }
         }
       });
-      localStream.current = stream;
+      
+      // Create a new MediaStream for local video
+      localStream.current = new MediaStream();
+      
+      // Add tracks to the local stream
+      stream.getTracks().forEach(track => {
+        localStream.current.addTrack(track);
+      });
+      
       setIsVideoOn(true); // Start with video enabled
       
       // Set local video stream
       if (localVideo.current) {
-        localVideo.current.srcObject = stream;
+        localVideo.current.srcObject = localStream.current;
+        localVideo.current.muted = true; // Mute local video to prevent echo
       }
       
       // Create peer connection
@@ -413,16 +422,35 @@ export const CallingProvider = ({ children }) => {
       
       // Handle incoming tracks (remote audio + video)
       pc.ontrack = (event) => {
-        remoteStream.current = event.streams[0];
-        if (remoteAudio.current) {
-          remoteAudio.current.srcObject = event.streams[0];
+        // Create a new MediaStream if it doesn't exist
+        if (!remoteStream.current) {
+          remoteStream.current = new MediaStream();
         }
-        if (remoteVideo.current) {
-          remoteVideo.current.srcObject = event.streams[0];
+        
+        // Add the track to our remote stream
+        event.track.onunmute = () => {
+          if (!remoteStream.current.getTracks().includes(event.track)) {
+            remoteStream.current.addTrack(event.track);
+          }
+        };
+
+        // Update the video element when we get a video track
+        if (event.track.kind === 'video') {
+          if (remoteVideo.current) {
+            remoteVideo.current.srcObject = remoteStream.current;
+          }
         }
+
+        // Update the audio element when we get an audio track
+        if (event.track.kind === 'audio') {
+          if (remoteAudio.current) {
+            remoteAudio.current.srcObject = remoteStream.current;
+          }
+        }
+
         setCallStatus('connected');
         startCallTimer();
-        toast.success('Video call connected!');
+        toast.success('Call connected!');
       };
       
       // Create offer

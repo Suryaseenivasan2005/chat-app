@@ -37,15 +37,26 @@ export const connectDB = async() => {
             throw new Error("MONGODB_URI environment variable is not defined");
         }
 
-        // Connect to MongoDB
-        await mongoose.connect(process.env.MONGODB_URI, options);
-        console.log("Successfully connected to MongoDB Atlas");
-
+        // Connect to MongoDB with retry mechanism
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                await mongoose.connect(process.env.MONGODB_URI, options);
+                console.log("Successfully connected to MongoDB Atlas");
+                return; // Successfully connected
+            } catch (error) {
+                retries--;
+                if (retries === 0) {
+                    console.error("Failed to connect to MongoDB after 3 attempts:", error);
+                    throw error; // No more retries, rethrow the error
+                }
+                console.error(`MongoDB Connection Error (${3-retries}/3):`, error);
+                console.log("Retrying connection in 5 seconds...");
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+        }
     } catch (error) {
-        console.error("MongoDB Connection Error:", error);
-        // Wait 5 seconds before retrying
-        console.log("Retrying connection in 5 seconds...");
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        console.error("Fatal MongoDB Connection Error:", error);
         throw error; // Rethrow the error to be handled by the server
     }
 }

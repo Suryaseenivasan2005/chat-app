@@ -14,6 +14,9 @@ export const AuthProvider = ({ children }) => {
   const [authUser, setAuthUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+  const [notificationPermission, setNotificationPermission] = useState('default');
 
   // ✅ Ensure token is sent correctly before calling checkAuth
   useEffect(() => {
@@ -22,6 +25,24 @@ export const AuthProvider = ({ children }) => {
       checkAuth();
     }
   }, [token]); // ✅ Watch token instead of empty array
+
+  // Listen for PWA install prompt
+  useEffect(() => {
+    const handler = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  // Request notification permission on load (silently)
+  useEffect(() => {
+    if ('Notification' in window) {
+      Notification.requestPermission().then((perm) => setNotificationPermission(perm));
+    }
+  }, []);
 
   const checkAuth = async () => {
     try {
@@ -94,9 +115,30 @@ export const AuthProvider = ({ children }) => {
       newSocket.on("getOnlineUsers", (userIds) => {
         setOnlineUsers(userIds);
       });
+      // Incoming call notification
+      newSocket.on('call_initiate', (data) => {
+        try {
+          if (notificationPermission === 'granted') {
+            const title = `${data.caller?.fullName || 'Caller'} is calling`;
+            const body = data.isVideoCall ? 'Video call' : 'Voice call';
+            const n = new Notification(title, { body });
+            n.onclick = () => window.focus();
+          }
+        } catch (err) {
+          // ignore
+        }
+      });
       
       setSocket(newSocket);
     }
+  };
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    setShowInstallBanner(false);
+    setDeferredPrompt(null);
   };
 
   const value = {
@@ -107,7 +149,25 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateProfile,
+    showInstallBanner,
+    handleInstallClick,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {showInstallBanner && (
+        <div className="fixed bottom-6 right-6 z-50 bg-[#282142] text-white p-4 rounded-lg shadow-lg flex items-center gap-3">
+          <div>
+            <p className="font-semibold">Please install and support my app</p>
+            <p className="text-sm text-gray-300">Install this app for a better experience</p>
+          </div>
+          <div className="ml-3">
+            <button onClick={handleInstallClick} className="bg-green-600 px-3 py-1 rounded-md">Install</button>
+            <button onClick={() => setShowInstallBanner(false)} className="ml-2 text-sm text-gray-300">Close</button>
+          </div>
+        </div>
+      )}
+    </AuthContext.Provider>
+  );
 };

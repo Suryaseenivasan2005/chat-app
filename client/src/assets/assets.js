@@ -24,6 +24,7 @@ import img2 from './img2.jpg'
 import Chitti from './Chitti.jpg'
 import phone_icon from './phone_icon.svg'
 import video_icon from './video_icon.svg'
+import hiHeyGif from './hi-hey.gif'
 
 
 const assets = {
@@ -42,7 +43,8 @@ const assets = {
     profile_martin,
     Chitti,
     phone_icon,
-    video_icon
+    video_icon,
+    hiHeyGif
 }
 
 export default assets;

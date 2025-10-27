@@ -433,22 +433,36 @@ export const getUserForSidebar = async (req, res) => {
     const currentUserId = req.user._id.toString();
 
     // Ensure the AI bot exists (create if missing)
-    let bot = await User.findOne({ fullName: "VettiBot", isBot: true });
+    let bot = await User.findOne({ fullName: "Bumble Bee", isBot: true });
     if (!bot) {
       bot = await User.create({
-        fullName: "VettiBot",
+        fullName: "Bumble Bee",
         profilePic: "/static/chitti.jpg",
-        bio: "Your AI assistant",
+        bio: "May I help you?",
         isBot: true,
       });
     }
 
-    // Fetch all users except the current user
-    let users = await User.find({ _id: { $ne: currentUserId } });
+    // Import FriendRequest model
+    const FriendRequest = (await import("../models/FriendRequest.js")).default;
+    
+    // Get accepted friends
+    const acceptedRequests = await FriendRequest.find({
+      $or: [
+        { senderId: currentUserId, status: 'accepted' },
+        { receiverId: currentUserId, status: 'accepted' }
+      ]
+    });
 
-    // Build list with bot pinned at the top (avoid duplication)
-    const listExcludingBot = users.filter(u => u._id.toString() !== bot._id.toString());
-    const allUsers = [bot, ...listExcludingBot];
+    // Extract friend IDs
+    const friendIds = acceptedRequests.map(req => 
+      req.senderId.toString() === currentUserId ? req.receiverId : req.senderId
+    );
+
+    // Fetch accepted friends and bot
+    let users = await User.find({ 
+      _id: { $in: [...friendIds, bot._id] }
+    });
 
     // Fetch groups where current user is a member and mix into users array
     const groups = await Group.find({ members: currentUserId }).populate("members", "fullName profilePic");
@@ -460,8 +474,8 @@ export const getUserForSidebar = async (req, res) => {
       members: g.members,
     }));
 
-    // Sort users by most recent message with current user (pin bot at top)
-    const usersWithLastMessage = await Promise.all(allUsers.map(async (u) => {
+    // Sort users by most recent message with current user
+    const usersWithLastMessage = await Promise.all(users.map(async (u) => {
       const lastMsg = await Message.findOne({
         $or: [
           { senderId: currentUserId, receiverId: u._id },
@@ -472,12 +486,7 @@ export const getUserForSidebar = async (req, res) => {
     }));
 
     usersWithLastMessage.sort((a, b) => b.lastAt - a.lastAt);
-
-    const sortedUsers = [
-      // bot pinned first
-      usersWithLastMessage.find(x => x.user._id.toString() === bot._id.toString())?.user || bot,
-      ...usersWithLastMessage.filter(x => x.user._id.toString() !== bot._id.toString()).map(x => x.user),
-    ];
+    const sortedUsers = usersWithLastMessage.map(x => x.user);
 
     res.json({ success: true, users: [...sortedUsers, ...groupAsUsers] });
   } catch (error) {

@@ -1,5 +1,6 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/User.js";
+import FriendRequest from "../models/FriendRequest.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
@@ -108,16 +109,47 @@ export const updateProfile = async (req, res) => {
 // Get User function
 export const getUsers = async (req, res) => {
   try {
-    const users = await User.find({}, "-password"); // exclude password
+    const currentUserId = req.user._id;
+
+    // Find all users except current user and bots
+    const users = await User.find({
+      _id: { $ne: currentUserId },
+      isBot: { $ne: true }
+    })
+    .select('fullName email bio profilePic') // Select only needed fields
+    .lean(); // Use lean for better performance
+
+    // Get all friend requests involving current user
+    const friendRequests = await FriendRequest.find({
+      $or: [
+        { senderId: currentUserId },
+        { receiverId: currentUserId }
+      ]
+    });
+
+    // Add friendship status to each user
+    const usersWithStatus = users.map(user => {
+      const request = friendRequests.find(req => 
+        (req.senderId.toString() === user._id.toString() && req.receiverId.toString() === currentUserId.toString()) ||
+        (req.receiverId.toString() === user._id.toString() && req.senderId.toString() === currentUserId.toString())
+      );
+
+      return {
+        ...user,
+        friendshipStatus: request ? request.status : 'none',
+        sentByMe: request ? request.senderId.toString() === currentUserId.toString() : false
+      };
+    });
+
     res.status(200).json({
       success: true,
-      users,
-      unseenMessages: {}, // optional: populate if needed
+      users: usersWithStatus
     });
   } catch (err) {
+    console.error("Get users error:", err);
     res.status(500).json({
       success: false,
-      message: "Failed to fetch users",
+      message: "Failed to fetch users"
     });
   }
 };

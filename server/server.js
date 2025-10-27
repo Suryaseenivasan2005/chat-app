@@ -6,6 +6,7 @@ import { connectDB } from "./lib/db.js";
 import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import groupRouter from "./routes/groupRoutes.js";
+import friendRouter from "./routes/friendRoutes.js";
 import { Server } from "socket.io"
 
 // Create Express App and HTTp server
@@ -106,18 +107,34 @@ io.on("connection", (socket) => {
 
 // Middleware setup
 app.use(express.json({limit: "4mb"}));
-// Update the CORS configuration
+// Update the CORS configuration with enhanced security
+const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "https://vettipechu.vercel.app"];
+
 app.use(cors({
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://vettipechu.vercel.app" ],
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true
+  credentials: true,
+  maxAge: 86400, // 24 hours
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
 
 // Routes setup
 app.use("/api/status", (req,res)=> res.send("Server is live"));
 app.use("/api/auth", userRouter);
-app.use("/api/messages", messageRouter)
-app.use("/api/groups", groupRouter)
+app.use("/api/users", userRouter); // Add this line for user routes
+app.use("/api/messages", messageRouter);
+app.use("/api/groups", groupRouter);
+app.use("/api/friends", friendRouter);
 
 // Modify the part where you connect to MongoDB and start the server
 
@@ -160,6 +177,9 @@ export default server;
 // # Start coding with Claude
 // claude
 // # You'll be prompted to log in on first use
+
+// Import Message model
+import Message from "./models/message.js";
 
 // Schedule message cleanup (run daily)
 const cleanupMessages = async () => {

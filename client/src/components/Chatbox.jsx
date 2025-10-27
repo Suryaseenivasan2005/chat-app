@@ -9,13 +9,14 @@ import { CallingContext } from '../../context/CallingContext.jsx';
 import toast from 'react-hot-toast';
 import share_icon from '../assets/share_icon.png';
 import copy_icon from '../assets/copy_icon.png';
-import video_call from '../assets/video_call.png'
 
 const Chatbox = () => {
-  const { messages, selectedUser, setSelectedUser, sendMessage, getMessages, isTypingFrom, isRecordingFrom } = useContext(ChatContext);
-  const { authUser, onlineUsers, socket } = useContext(AuthContext);
+  const { messages, selectedUser, setSelectedUser, sendMessage, getMessages, isTypingFrom, isRecordingFrom, getUsers } = useContext(ChatContext);
+  const { authUser, onlineUsers, socket, axios } = useContext(AuthContext);
   const { initiateCall, initiateVideoCall, isInCall } = useContext(CallingContext);
   const scrollEnd = useRef();
+  const inputRef = useRef(null);
+  const [replyTo, setReplyTo] = useState(null);
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
@@ -71,12 +72,15 @@ const Chatbox = () => {
       setIsThinking(true);
     }
     
-    await sendMessage({ text: messageText });
+  const payload = { text: messageText };
+  if (replyTo && replyTo._id) payload.replyTo = replyTo._id;
+  await sendMessage(payload);
     
     if (socket) socket.emit('stop_typing', { to: selectedUser._id });
     
     // Reset thinking state after message is sent
     setIsThinking(false);
+    setReplyTo(null);
   };
 
   const handleSendImage = async (e) => {
@@ -170,36 +174,44 @@ const Chatbox = () => {
   return selectedUser ? (
     <div className="h-full overflow-scroll relative backdrop-blur-lg">
       {/* Header */}
-      <div className={`flex items-center gap-3 py-4 px-6 border-b border-stone-500 sticky top-0 z-10 bg-black/30 backdrop-blur-lg transition-transform duration-300 ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}>
+      <div
+        className={`flex items-center gap-3 py-4 px-6 border-b border-stone-500 sticky top-0 z-10 bg-black/30 backdrop-blur-lg transition-transform duration-300 ${showHeader ? 'translate-y-0' : '-translate-y-full'}`}
+      >
         <img
           src={selectedUser.isBot ? assets.Chitti : (selectedUser.profilePic || assets.avatar_icon)}
           alt="User profile"
           className="w-9 h-9 rounded-full object-cover"
         />
+
         <p className="flex-1 text-lg text-white flex items-center gap-2 font-semibold">
           {selectedUser.fullName}
           {onlineUsers.includes(selectedUser._id) && (
-            <span className="w-2 h-2 rounded-full bg-green-500"></span>
+            <span className="w-2 h-2 rounded-full bg-green-500" />
           )}
         </p>
-        <div className="flex gap-2">
-          <img
-            onClick={handleCall}
-            src={assets.phone_icon}
-            alt="Voice Call"
-            className={`w-5 h-5 ${isInCall ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            style={{ filter: 'invert(1)' }}
-            title="Voice Call"
-          />
-          <img
-            onClick={handleVideoCall}
-            src={video_call}
-            alt="Video Call"
-            className={`w-5 h-5 ${isInCall ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            draggable="false"
-            title="Video Call"
-          />
-        </div>
+
+        {/* Show voice & video call only for real users (not bots) */}
+        {!selectedUser.isBot && (
+          <div className="flex gap-3 items-center">
+            <img
+              onClick={handleCall}
+              src={assets.phone_icon}
+              alt="Voice Call"
+              className={`w-5 h-5 ${isInCall ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              style={{ filter: 'invert(1)' }}
+              title="Voice Call"
+            />
+            <img
+              onClick={handleVideoCall}
+              src={assets.video_icon}
+              alt="Video Call"
+              className={`w-5 h-5 ${isInCall ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              style={{ filter: 'invert(1)' }}
+              title="Video Call"
+            />
+          </div>
+        )}
+
         <img
           onClick={() => setSelectedUser(null)}
           src={assets.arrow_icon}
@@ -207,6 +219,34 @@ const Chatbox = () => {
           className="md:hidden w-6 cursor-pointer"
         />
         <img src={assets.help_icon} alt="Help" className="max-md:hidden w-5" />
+
+        {/* Block / Remove Friend */}
+        {selectedUser && !selectedUser.isBot && (
+          <button
+            onClick={async () => {
+              try {
+                const confirmed = window.confirm(`Remove ${selectedUser.fullName} from your friends? This will send them back to Add Friends list.`);
+                if (!confirmed) return;
+                const { data } = await axios.post(`/api/friends/block/${selectedUser._id}`);
+                if (data.success) {
+                  toast.success(data.message || 'User removed');
+                  setSelectedUser(null);
+                  // Refresh sidebar users
+                  getUsers();
+                } else {
+                  toast.error(data.message || 'Failed to remove user');
+                }
+              } catch (err) {
+                console.error('Block error', err.message);
+                toast.error('Failed to remove user');
+              }
+            }}
+            className="max-md:hidden ml-2 text-sm text-red-400 hover:text-red-300"
+            title="Remove / Block user"
+          >
+            Remove
+          </button>
+        )}
       </div>
 
       {/* Chat Area */}
@@ -237,6 +277,10 @@ const Chatbox = () => {
         )}
         {messages.map((msg, index) => {
           const isCurrentUser = msg.senderId === authUser._id;
+          // Resolve replied message if available (replyTo may be id or object)
+          const repliedMessage = msg.replyTo
+            ? messages.find((m) => m._id === (typeof msg.replyTo === 'string' ? msg.replyTo : msg.replyTo._id))
+            : null;
           
           // Special handling for missed calls - show as system message
           if (msg.isMissedCall) {
@@ -272,6 +316,17 @@ const Chatbox = () => {
 
               {/* Message Bubble */}
               <div className="flex flex-col max-w-[300px]">
+                {repliedMessage && (
+                  <div className={`mb-1 p-2 rounded bg-gray-800 text-xs text-gray-300 border-l-2 border-[#6b4db3] max-w-[260px] ${isCurrentUser ? 'self-end text-right' : 'self-start text-left'}`}>
+                    {repliedMessage.image ? (
+                      <span className="text-xs text-gray-400">Image</span>
+                    ) : repliedMessage.audio ? (
+                      <span className="text-xs text-gray-400">Audio</span>
+                    ) : (
+                      <span className="truncate text-gray-400">{repliedMessage.text}</span>
+                    )}
+                  </div>
+                )}
                 {msg.image ? (
                   <img
                     src={msg.image}
@@ -286,11 +341,11 @@ const Chatbox = () => {
                       {msg.text}
                     </p>
                   </div>
-                ) : (
+                  ) : (
                   <p
                     className={`p-3 text-sm rounded-xl shadow-md text-white break-words whitespace-pre-wrap ${
                       isCurrentUser
-                        ? 'bg-blue-600 rounded-br-none self-end text-right'
+                        ? 'bg-blue-600 rounded-br-none self-end text-left'
                         : 'bg-gray-700 rounded-bl-none self-start text-left'
                     }`}
                     dangerouslySetInnerHTML={{
@@ -317,12 +372,22 @@ const Chatbox = () => {
                       <img src={copy_icon} alt="Copy" className="w-3 h-3" />
                     </button>
                   )}
+
+                  {/* Reply button only (share removed) - violet color */}
                   {(msg.text || msg.image || msg.audio) && (
                     <button
-                      onClick={() => setShareTarget(msg)}
-                      className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-[] text-white opacity-80 hover:opacity-100"
+                      onClick={() => {
+                        setReplyTo(msg);
+                        // focus input so user can type reply immediately
+                        setTimeout(() => { inputRef.current && inputRef.current.focus(); }, 0);
+                      }}
+                      className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded bg-[] text-[#6b4db3] hover:opacity-90"
+                      title="Reply"
                     >
-                      <img src={share_icon} alt="Share" className="w-3 h-3" />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M10 19l-7-7 7-7" />
+                        <path d="M3 12h11a4 4 0 0 1 4 4v1" />
+                      </svg>
                     </button>
                   )}
                 </div>
@@ -349,27 +414,43 @@ const Chatbox = () => {
         <div ref={scrollEnd}></div>
       </div>
 
-      {/* Input Area */}
+      {/* Input Area - reverted to original compact style */}
       <div className="sticky bottom-0 left-0 right-0 z-10 flex items-center gap-3 p-3 bg-black/30 backdrop-blur-lg border-t border-gray-600">
-        <div className="flex-1 flex items-center bg-gray-100/10 px-4 py-2 rounded-full border border-gray-600 shadow-md">
-          <input
-            onChange={(e) => setInput(e.target.value)}
-            value={input}
-            onKeyDown={(e) => e.key === 'Enter' ? handleSendMessage(e) : null}
-            type="text"
-            placeholder="send a message"
-            className="flex-1 text-sm bg-transparent p-2 border-none outline-none text-white placeholder-gray-400"
-          />
-          <input onChange={handleSendImage} type="file" id="image" accept="image/png, image/jpeg" hidden />
-          <label htmlFor="image">
-            <img src={assets.gallery_icon} alt="Upload" className="w-5 h-5 mr-2 cursor-pointer" />
-          </label>
+        <div className="flex-1 flex flex-col bg-gray-100/10 px-3 py-2 rounded-full border border-gray-600 shadow-md">
+          {replyTo && (
+            <div className="mb-2 w-full">
+              <div className="px-2 py-1 rounded bg-black/40 text-xs text-gray-300 truncate border-l-2 border-[#6b4db3] flex justify-between items-center">
+                <div className="truncate">
+                  <span className="text-gray-400 text-[11px] mr-1">Replying to</span>
+                  <span className="text-gray-200 text-[12px]">{replyTo.text ? replyTo.text.slice(0, 120) : (replyTo.image ? 'Image' : 'Audio')}</span>
+                </div>
+                <button onClick={() => setReplyTo(null)} className="text-gray-400 ml-2 text-sm">✕</button>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <input
+              ref={inputRef}
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
+              onKeyDown={(e) => e.key === 'Enter' ? handleSendMessage(e) : null}
+              type="text"
+              placeholder="Send a message"
+              className="flex-1 text-sm bg-transparent p-2 border-none outline-none text-white placeholder-gray-400"
+            />
+            <input onChange={handleSendImage} type="file" id="image" accept="image/png, image/jpeg" hidden />
+            <label htmlFor="image" className="flex-shrink-0">
+              <img src={assets.gallery_icon} alt="Upload" className="w-5 h-5 cursor-pointer" />
+            </label>
+          </div>
         </div>
+
         {!isRecording ? (
           <button onClick={startRecording} className="w-9 h-9 rounded-full bg-red-500/80 text-white text-xs">Mic</button>
         ) : (
           <button onClick={stopRecording} className="w-9 h-9 rounded-full bg-red-700 text-white text-xs">Stop</button>
         )}
+
         <img onClick={handleSendMessage} src={assets.send_button} alt="Send" className="w-7 h-7 cursor-pointer" />
       </div>
       {shareTarget && (

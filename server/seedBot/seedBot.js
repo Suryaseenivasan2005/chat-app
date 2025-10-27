@@ -15,18 +15,18 @@ const connectAndSeed = async () => {
 
     const existingBot = await User.findOne({ isBot: true });
     if (existingBot) {
-      console.log("⚠️  VettiBot already exists.");
+      console.log("⚠️  Bumble Bee already exists.");
       process.exit();
     }
 
     await User.create({
-      fullName: "VettiBot",
+      fullName: "Bumble Bee",
       profilePic: "https://i.imgur.com/your-bot-avatar.png",
       bio: "Your AI assistant",
       isBot: true
     });
 
-    console.log("🤖 VettiBot seeded successfully.");
+    console.log("🤖 Bumble Bee seeded successfully.");
     process.exit();
   } catch (err) {
     console.error("❌ Error:", err.message);

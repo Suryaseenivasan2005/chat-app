@@ -9,6 +9,7 @@ userRouter.post("/signup", signup);
 userRouter.post("/login", login);
 userRouter.put("/update-profile", protectRoute, updateProfile);
 userRouter.get("/check", protectRoute, checkAuth);
-userRouter.get("/get-users", protectRoute, getUsers);
+userRouter.get("/all", protectRoute, getUsers);
+userRouter.get("/get-users", protectRoute, getUsers); // keep for backward compatibility
 
 export default userRouter;

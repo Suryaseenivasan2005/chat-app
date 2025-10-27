@@ -93,6 +93,21 @@ const getUsers = async () => {
             ? prev[newMessage.senderId] + 1
             : 1,
         }));
+        // Show desktop notification when message received and user is not focused on that chat
+        try {
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            const sender = users.find(u => u._id === newMessage.senderId);
+            const title = sender ? sender.fullName : 'New message';
+            const body = newMessage.text ? newMessage.text.substring(0, 80) : 'Media message';
+            // Only show notification if the window is hidden or the sender is not the selected user
+            if (document.hidden || !isCurrentChat) {
+              const n = new Notification(title, { body });
+              n.onclick = () => window.focus();
+            }
+          }
+        } catch (err) {
+          // ignore
+        }
       }
     });
 
@@ -107,6 +122,11 @@ const getUsers = async () => {
     });
     socket.on("stop_recording", ({ from }) => {
       if (isRecordingFrom === from) setIsRecordingFrom(null);
+    });
+    // Listen for friend request updates to refresh users
+    socket.on('friendRequestUpdated', (payload) => {
+      // Refresh the sidebar users
+      getUsers();
     });
     
   };
@@ -125,6 +145,17 @@ const getUsers = async () => {
     subscribeToMessages();
     return () => unsubscribeFromMessages();
   }, [socket, selectedUser]);
+
+  // Auto-refresh effect for bot messages
+  useEffect(() => {
+    if (selectedUser?.isBot) {
+      const refreshInterval = setInterval(() => {
+        getMessages(selectedUser._id);
+      }, 5000); // Check for new messages every 5 seconds
+
+      return () => clearInterval(refreshInterval);
+    }
+  }, [selectedUser]);
 
   const value = {
     messages,
