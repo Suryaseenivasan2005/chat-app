@@ -260,21 +260,7 @@ const Chatbox = () => {
         {isRecordingFrom === selectedUser._id && (
           <div className="text-xs text-gray-300 opacity-80">recording…</div>
         )}
-        {isThinking && selectedUser?.isBot && (
-          <div className="flex items-center gap-2 text-sm text-gray-300 opacity-80">
-            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-xs text-white">
-              {selectedUser.fullName.charAt(0).toUpperCase()}
-            </div>
-            <div className="p-3 text-sm rounded-xl shadow-md text-white bg-gray-700 rounded-bl-none">
-              <span className="inline-flex items-center">
-                <span className="animate-pulse">Thinking</span>
-                <span className="animate-bounce delay-75">.</span>
-                <span className="animate-bounce delay-150">.</span>
-                <span className="animate-bounce delay-300">.</span>
-              </span>
-            </div>
-          </div>
-        )}
+        {/* thinking indicator moved to bottom so it appears near latest messages */}
         {messages.map((msg, index) => {
           const isCurrentUser = msg.senderId === authUser._id;
           // Resolve replied message if available (replyTo may be id or object)
@@ -411,6 +397,22 @@ const Chatbox = () => {
             </div>
           );
         })}
+        {isThinking && selectedUser?.isBot && (
+          <div className="flex items-center gap-2 text-sm text-gray-300 opacity-90 self-start">
+            <div className="w-7 h-7 rounded-full bg-gray-600 flex items-center justify-center text-xs text-white">
+              {selectedUser.fullName.charAt(0).toUpperCase()}
+            </div>
+            <div className="p-3 text-sm rounded-xl shadow-md text-white bg-gray-700">
+              <span className="inline-flex items-center">
+                <span className="animate-pulse">Thinking</span>
+                <span className="animate-bounce delay-75">.</span>
+                <span className="animate-bounce delay-150">.</span>
+                <span className="animate-bounce delay-300">.</span>
+              </span>
+            </div>
+          </div>
+        )}
+
         <div ref={scrollEnd}></div>
       </div>
 

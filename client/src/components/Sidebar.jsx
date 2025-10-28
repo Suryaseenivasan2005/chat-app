@@ -23,6 +23,7 @@ const Sidebar = () => {
   const filteredUsers = input
     ? users.filter((user) => user.fullName.toLowerCase().includes(input.toLowerCase()))
     : users;
+  const hasFriends = users.filter(u => !u.isBot).length > 0;
 
   return (
     <div className={`bg-[#8185B2]/10 h-full flex flex-col rounded-r-xl text-white relative ${selectedUser ? "max-md:hidden" : ""}`}>
@@ -30,7 +31,7 @@ const Sidebar = () => {
       {/* Header */}
       <div className="pb-5">
         <div className="flex justify-between items-center">
-          <img src={img99} alt="logo" className="max-w-10 rounded-xl" />
+          <img src={img99} alt="logo" className="max-w-10 rounded-xl cursor-pointer" onClick={() => navigate('/friends/request')} />
           <p>Vetti Pechu</p>
           <div className="flex items-center gap-2">
             {/* Mail Icon for Notifications */}
@@ -178,7 +179,7 @@ const Sidebar = () => {
           {/* Add Friend Button - compact */}
           <button
             onClick={() => navigate('/friends/request')}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-blue-700 transition-colors duration-300 shadow-lg"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-green-700 transition-colors duration-300 shadow-lg"
           >
             <span className="text-white text-sm font-medium">Add Friend</span>
             <span className="text-white text-lg">+</span>

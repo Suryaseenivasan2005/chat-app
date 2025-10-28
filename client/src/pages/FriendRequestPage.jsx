@@ -63,80 +63,111 @@ const FriendRequestPage = () => {
     ? users.filter((user) => user.fullName.toLowerCase().includes(searchInput.toLowerCase()))
     : users;
 
+  // Helper to safely get profile image URL (handles string or object shapes)
+  const getProfilePic = (user) => {
+    if (!user) return assets.avatar_icon;
+    const pic = user.profilePic;
+    if (!pic) return assets.avatar_icon;
+    // string cases
+    if (typeof pic === 'string') {
+      // already a data URI
+      if (pic.startsWith('data:')) return pic;
+      // absolute URL
+      if (pic.startsWith('http')) return pic;
+      // relative path served from the same origin
+      if (pic.startsWith('/')) return `${window.location.origin}${pic}`;
+      // fallback - return as-is (might be a protocol-relative or missing scheme)
+      return pic;
+    }
+    // object cases: cloudinary upload responses or { url: '' }
+    if (pic.url) return pic.url;
+    if (pic.secure_url) return pic.secure_url;
+    if (pic.path) return `${window.location.origin}${pic.path}`;
+    if (pic.src) return pic.src;
+    return assets.avatar_icon;
+  };
+
   return (
-    <div className="bg-[#8185B2]/10 min-h-screen flex flex-col text-white">
-      {/* Fixed Header */}
-      <div className="bg-[#282142] p-4 flex items-center gap-4 sticky top-0 z-10">
-        <button
-          onClick={() => navigate('/')}
-          className="text-white hover:text-gray-300"
-        >
-          ← Back
-        </button>
-        <h1 className="text-xl font-semibold">Add Friends</h1>
-      </div>
+    <div className={`bg-[#8185B2]/10 min-h-screen flex flex-col text-white`}> 
+      <div className="flex-1 overflow-y-auto p-5">
+        {/* Header (same as Sidebar) */}
+        <div className="pb-5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/')}
+                className="text-white hover:text-gray-300"
+              >
+                ← Back
+              </button>
+              <img src={assets.img99} alt="" className="max-w-10 rounded-xl cursor-pointer" onClick={() => navigate('/friends/request')} />
+            </div>
+            {/* top-right icons removed as requested */}
+          </div>
 
-      {/* Fixed Search Bar */}
-      <div className="sticky top-[72px] z-10 bg-[#8185B2]/10 p-4">
-        <div className="bg-[#282142] rounded-full flex items-center gap-2 py-3 px-4">
-          <img src={assets.search_icon} alt="search" className="w-5" />
-          <input
-            onChange={(e) => setSearchInput(e.target.value)}
-            type="text"
-            placeholder="Search users..."
-            className="bg-transparent border-none outline-none text-white text-sm placeholder-[#c8c8c8] flex-1"
-          />
+          {/* Search Bar */}
+          <div className="bg-[#282142] rounded-full flex items-center gap-2 py-3 px-4 mt-5">
+            <img src={assets.search_icon} alt="search" className="w-5" />
+            <input
+              onChange={(e) => setSearchInput(e.target.value)}
+              type="text"
+              placeholder='Search User...'
+              className='bg-transparent border-none outline-none text-white text-xs placeholder-[#c8c8c8] flex-1'
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Scrollable Users List */}
-      <div className="flex-1 px-4 pb-4 overflow-y-auto">
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-gray-400">Loading users...</p>
-          </div>
-        ) : filteredUsers.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-400">No users found</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredUsers.map((user) => (
+        {/* Users List - same row style as Sidebar */}
+        <div className="flex flex-col flex-1">
+          {loading ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Loading users...</p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">No users found</p>
+            </div>
+          ) : (
+            filteredUsers.map((user) => (
               <div
                 key={user._id}
-                className="flex items-center gap-3 p-4 bg-[#282142]/50 rounded-lg hover:bg-[#282142]/70 transition-colors duration-300"
+                className="relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm hover:bg-[#282142]/40"
               >
-                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[#8185B2]/20">
+                <div className="relative w-[44px] h-[44px]">
                   <img
-                    src={user.profilePic || assets.avatar_icon}
+                    src={getProfilePic(user)}
                     alt={user.fullName}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src = assets.avatar_icon;
-                    }}
+                    className="w-full h-full rounded-full object-cover"
+                    onError={(e) => { e.target.src = assets.avatar_icon; }}
                   />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium truncate">{user.fullName}</h3>
-                  <p className="text-sm text-gray-400 truncate">{user.bio || 'No bio available'}</p>
+                <div className="flex flex-col leading-5">
+                  <p className="text-base font-medium">{user.fullName}</p>
+                  <span className={`text-sm text-gray-400 max-w-[180px] truncate`}>
+                    {user.bio ? user.bio : 'No bio available'}
+                  </span>
                 </div>
-                {user.friendshipStatus === 'pending' || user.sentByMe ? (
-                  <button className="bg-gray-400 text-white px-6 py-2 rounded-full text-sm font-medium cursor-not-allowed flex-shrink-0">
-                    Request Sent
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => sendFriendRequest(user._id)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 transform hover:scale-105 flex-shrink-0"
-                  >
-                    Add Friend
-                  </button>
-                )}
+
+                <div className='absolute top-2 right-2'>
+                  {user.friendshipStatus === 'pending' || user.sentByMe ? (
+                    <button className="bg-gray-400 text-white px-4 py-1 rounded-full text-sm font-medium cursor-not-allowed">
+                      Request Sent
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => sendFriendRequest(user._id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-full text-sm font-medium transition-all duration-300"
+                    >
+                      Add Friend
+                    </button>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
+      {/* Bottom area removed per request */}
     </div>
   );
 };

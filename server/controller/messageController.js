@@ -222,10 +222,24 @@ const getSimpleAIResponse = async (message) => {
   } else if (lowerMsg.match(/\b(nice|good job|great|awesome|cool|amazing|excellent|wonderful)\b/)) {
     return getRandomResponse('compliment');
   } else {
-    // Try web search for unknown queries
+    // Try web search for unknown queries. Prefer searching a filtered keyword
     try {
       console.log("No predefined response found, attempting web search");
-      const searchResult = await performWebSearch(message);
+      // Extract significant keyword(s) from the message by removing common stopwords
+      const stopwords = new Set(['the','is','in','at','which','on','a','an','and','or','of','for','to','what','who','when','where','why','how','was','were','are','it','that','this','these','those','i','you','he','she','they','we','my','your','his','her','their','but','by','with','as','be','from','have','has','had','do','does','did']);
+      const tokens = message.replace(/[.,!?;:\/()\[\]"']/g, ' ').split(/\s+/).map(t => t.trim()).filter(Boolean);
+      const significant = tokens.filter(t => !stopwords.has(t.toLowerCase()));
+      // Prefer a single keyword: pick the last significant token if multiple present
+      let query;
+      if (significant.length === 0) {
+        query = message;
+      } else if (significant.length === 1) {
+        query = significant[0];
+      } else {
+        query = significant[significant.length - 1];
+      }
+
+      const searchResult = await performWebSearch(query);
       
       if (searchResult.success && searchResult.results && searchResult.results.length > 0) {
         console.log("Web search successful, returning answers");

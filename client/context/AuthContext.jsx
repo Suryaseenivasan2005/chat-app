@@ -159,8 +159,7 @@ export const AuthProvider = ({ children }) => {
       {showInstallBanner && (
         <div className="fixed bottom-6 right-6 z-50 bg-[#282142] text-white p-4 rounded-lg shadow-lg flex items-center gap-3">
           <div>
-            <p className="font-semibold">Please install and support my app</p>
-            <p className="text-sm text-gray-300">Install this app for a better experience</p>
+            <p className="font-semibold">Install</p>
           </div>
           <div className="ml-3">
             <button onClick={handleInstallClick} className="bg-green-600 px-3 py-1 rounded-md">Install</button>

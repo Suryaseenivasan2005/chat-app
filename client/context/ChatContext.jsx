@@ -46,6 +46,8 @@ const getUsers = async () => {
       const { data } = await axios.post(`/api/messages/send/${selectedUser._id}`, messageData);
       if (data.success) {
         setMessages((prevMessages) => [...prevMessages, data.message]);
+
+        // Server will handle bot replies; no client-side simulation to avoid duplicates
       } else {
         toast.error(data.message);
       }
