@@ -11,7 +11,7 @@ import share_icon from '../assets/share_icon.png';
 import copy_icon from '../assets/copy_icon.png';
 
 const Chatbox = () => {
-  const { messages, selectedUser, setSelectedUser, sendMessage, getMessages, isTypingFrom, isRecordingFrom, getUsers } = useContext(ChatContext);
+  const { messages, selectedUser, setSelectedUser, sendMessage, getMessages, isTypingFrom, isRecordingFrom, getUsers, users } = useContext(ChatContext);
   const { authUser, onlineUsers, socket, axios } = useContext(AuthContext);
   const { initiateCall, initiateVideoCall, isInCall } = useContext(CallingContext);
   const scrollEnd = useRef();
@@ -31,10 +31,10 @@ const Chatbox = () => {
   useEffect(() => {
     const handleScroll = (e) => {
       if (!chatAreaRef.current) return;
-      
+
       const scrollTop = chatAreaRef.current.scrollTop;
       const scrollThreshold = 10; // Minimum scroll distance to trigger hide/show
-      
+
       // Only change header visibility if scroll difference is significant
       if (Math.abs(scrollTop - lastScrollTop.current) > scrollThreshold) {
         if (scrollTop > lastScrollTop.current && scrollTop > 50) {
@@ -44,16 +44,16 @@ const Chatbox = () => {
           // Scrolling up - show header
           setShowHeader(true);
         }
-        
+
         lastScrollTop.current = scrollTop;
       }
     };
-    
+
     const chatArea = chatAreaRef.current;
     if (chatArea) {
       chatArea.addEventListener('scroll', handleScroll, { passive: true });
     }
-    
+
     return () => {
       if (chatArea) {
         chatArea.removeEventListener('scroll', handleScroll);
@@ -66,18 +66,18 @@ const Chatbox = () => {
     if (input.trim() === '') return;
     const messageText = input.trim();
     setInput(''); // Clear input immediately before sending
-    
+
     // Set thinking state if messaging the bot
     if (selectedUser?.isBot) {
       setIsThinking(true);
     }
-    
-  const payload = { text: messageText };
-  if (replyTo && replyTo._id) payload.replyTo = replyTo._id;
-  await sendMessage(payload);
-    
+
+    const payload = { text: messageText };
+    if (replyTo && replyTo._id) payload.replyTo = replyTo._id;
+    await sendMessage(payload);
+
     if (socket) socket.emit('stop_typing', { to: selectedUser._id });
-    
+
     // Reset thinking state after message is sent
     setIsThinking(false);
     setReplyTo(null);
@@ -151,23 +151,23 @@ const Chatbox = () => {
 
   const handleCall = async () => {
     if (!selectedUser) return;
-    
+
     if (!onlineUsers.includes(selectedUser._id)) {
       toast.error("User is offline");
       return;
     }
-    
+
     await initiateCall(selectedUser);
   };
 
   const handleVideoCall = async () => {
     if (!selectedUser) return;
-    
+
     if (!onlineUsers.includes(selectedUser._id)) {
       toast.error("User is offline");
       return;
     }
-    
+
     await initiateVideoCall(selectedUser);
   };
 
@@ -250,7 +250,7 @@ const Chatbox = () => {
       </div>
 
       {/* Chat Area */}
-      <div 
+      <div
         ref={chatAreaRef}
         className="flex flex-col h-[calc(100vh-120px)] overflow-y-auto px-4 py-3 space-y-4 scrollbar-hide"
       >
@@ -267,7 +267,7 @@ const Chatbox = () => {
           const repliedMessage = msg.replyTo
             ? messages.find((m) => m._id === (typeof msg.replyTo === 'string' ? msg.replyTo : msg.replyTo._id))
             : null;
-          
+
           // Special handling for missed calls - show as system message
           if (msg.isMissedCall) {
             return (
@@ -327,13 +327,12 @@ const Chatbox = () => {
                       {msg.text}
                     </p>
                   </div>
-                  ) : (
+                ) : (
                   <p
-                    className={`p-3 text-sm rounded-xl shadow-md text-white break-words whitespace-pre-wrap ${
-                      isCurrentUser
-                        ? 'bg-blue-600 rounded-br-none self-end text-left'
-                        : 'bg-gray-700 rounded-bl-none self-start text-left'
-                    }`}
+                    className={`p-3 text-sm rounded-xl shadow-md text-white break-words whitespace-pre-wrap ${isCurrentUser
+                      ? 'bg-blue-600 rounded-br-none self-end text-left'
+                      : 'bg-gray-700 rounded-bl-none self-start text-left'
+                      }`}
                     dangerouslySetInnerHTML={{
                       __html: msg.text && msg.text.replace(
                         /(https?:\/\/[^\s]+)/g,
@@ -343,9 +342,8 @@ const Chatbox = () => {
                   ></p>
                 )}
                 <p
-                  className={`text-xs text-gray-400 mt-1 ${
-                    isCurrentUser ? 'text-right' : 'text-left'
-                  }`}
+                  className={`text-xs text-gray-400 mt-1 ${isCurrentUser ? 'text-right' : 'text-left'
+                    }`}
                 >
                   {formatMessageTime(msg.createdAt)}
                 </p>
@@ -460,13 +458,55 @@ const Chatbox = () => {
       )}
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center gap-2 text-gray-500 bg-white/10 max-md:hidden h-full">
+    <div className="flex flex-col items-center justify-center gap-6 text-gray-300 bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 max-md:hidden h-full px-8 backdrop-blur-lg">
+      {/* Welcome Icon/Image */}
       <img
         src={img99}
         alt="Chat illustration"
-        className="w-40 h-40 object-cover rounded-2xl mx-auto"
+        className="w-32 h-32 object-cover rounded-2xl mx-auto shadow-lg border-2 border-violet-500/30"
       />
-      <p className="text-lg font-medium text-white">Chat anytime, anywhere</p>
+
+      {/* Welcome Heading */}
+      <h1 className="text-3xl font-bold text-white text-center">
+        Welcome to Vetti Chat 👋
+      </h1>
+
+      {/* Body Text */}
+      <p className="text-center text-gray-400 max-w-md leading-relaxed">
+        No active chats yet. This app is new, so conversations start quietly.
+      </p>
+
+      {/* Suggested Actions */}
+      <div className="bg-white/5 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm max-w-md w-full">
+        <h2 className="text-lg font-semibold text-white mb-4">Get Started:</h2>
+        <ul className="space-y-3 text-gray-300">
+          <li className="flex items-start gap-3">
+            <span className="text-violet-400 mt-1">•</span>
+            <span>Start a conversation with Bumble Bee 🤖</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-violet-400 mt-1">•</span>
+            <span>Send a friend request</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-violet-400 mt-1">•</span>
+            <span>Invite someone you know</span>
+          </li>
+        </ul>
+      </div>
+
+      {/* Primary CTA Button */}
+      <button
+        onClick={() => {
+          const botUser = users?.find(user => user.isBot);
+          if (botUser) {
+            setSelectedUser(botUser);
+          }
+        }}
+        className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl"
+      >
+        Start with Bumble Bee
+      </button>
     </div>
   );
 };
