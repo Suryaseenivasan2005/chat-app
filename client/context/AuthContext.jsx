@@ -3,7 +3,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 
-const backendUrl = import.meta.env.VITE_BACKEND_URL;
+const backendUrl = import.meta.env.VITE_API_URL;
 axios.defaults.baseURL = backendUrl;
 axios.defaults.withCredentials = true;
 
@@ -101,7 +101,7 @@ export const AuthProvider = ({ children }) => {
 
   const connectSocket = (userData) => {
     if (!userData) return;
-    
+
     // Only create new socket if one doesn't exist
     if (!socket) {
       const newSocket = io(backendUrl, {
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }) => {
         reconnectionDelay: 2000,
         timeout: 10000
       });
-      
+
       newSocket.on("getOnlineUsers", (userIds) => {
         setOnlineUsers(userIds);
       });
@@ -128,7 +128,7 @@ export const AuthProvider = ({ children }) => {
           // ignore
         }
       });
-      
+
       setSocket(newSocket);
     }
   };
