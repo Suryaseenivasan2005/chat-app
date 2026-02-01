@@ -61,6 +61,15 @@ const Chatbox = () => {
     };
   }, []);
 
+  // Helper function to activate Bumble Bee in sidebar
+  const activateBumbleBee = () => {
+    if (localStorage.getItem('bumblebee_active') !== 'true') {
+      localStorage.setItem('bumblebee_active', 'true');
+      // Dispatch custom event to notify Sidebar
+      window.dispatchEvent(new Event('bumblebee-activated'));
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (input.trim() === '') return;
@@ -70,6 +79,8 @@ const Chatbox = () => {
     // Set thinking state if messaging the bot
     if (selectedUser?.isBot) {
       setIsThinking(true);
+      // Activate Bumble Bee in sidebar after first message
+      activateBumbleBee();
     }
 
     const payload = { text: messageText };
@@ -108,6 +119,17 @@ const Chatbox = () => {
       scrollEnd.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  // Activate Bumble Bee when receiving messages from bot
+  useEffect(() => {
+    if (selectedUser?.isBot && messages && messages.length > 0) {
+      // Check if there are any messages from the bot
+      const hasBotMessages = messages.some(msg => msg.senderId === selectedUser._id);
+      if (hasBotMessages) {
+        activateBumbleBee();
+      }
+    }
+  }, [messages, selectedUser]);
 
   useEffect(() => {
     if (!socket || !selectedUser) return;
@@ -459,41 +481,25 @@ const Chatbox = () => {
     </div>
   ) : (
     <div className="flex flex-col items-center justify-center gap-6 text-gray-300 bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 max-md:hidden h-full px-8 backdrop-blur-lg">
-      {/* Welcome Icon/Image */}
-      <img
-        src={img99}
-        alt="Chat illustration"
-        className="w-32 h-32 object-cover rounded-2xl mx-auto shadow-lg border-2 border-violet-500/30"
-      />
+      {/* Bumble Bee Animated GIF */}
+      <div className="relative">
+        <img
+          src={assets.hiHeyGif}
+          alt="Bumble Bee"
+          className="w-24 h-24 object-contain"
+          style={{ imageRendering: 'pixelated' }}
+        />
+      </div>
 
       {/* Welcome Heading */}
       <h1 className="text-3xl font-bold text-white text-center">
-        Welcome to Vetti Chat 👋
+        Say hi to Bumble Bee 🐝
       </h1>
 
       {/* Body Text */}
       <p className="text-center text-gray-400 max-w-md leading-relaxed">
-        No active chats yet. This app is new, so conversations start quietly.
+        I'm here to help you get started. This app is new, so conversations begin here.
       </p>
-
-      {/* Suggested Actions */}
-      <div className="bg-white/5 rounded-xl p-6 border border-gray-700/50 backdrop-blur-sm max-w-md w-full">
-        <h2 className="text-lg font-semibold text-white mb-4">Get Started:</h2>
-        <ul className="space-y-3 text-gray-300">
-          <li className="flex items-start gap-3">
-            <span className="text-violet-400 mt-1">•</span>
-            <span>Start a conversation with Bumble Bee 🤖</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-violet-400 mt-1">•</span>
-            <span>Send a friend request</span>
-          </li>
-          <li className="flex items-start gap-3">
-            <span className="text-violet-400 mt-1">•</span>
-            <span>Invite someone you know</span>
-          </li>
-        </ul>
-      </div>
 
       {/* Primary CTA Button */}
       <button
@@ -501,11 +507,13 @@ const Chatbox = () => {
           const botUser = users?.find(user => user.isBot);
           if (botUser) {
             setSelectedUser(botUser);
+            // Activate Bumble Bee in sidebar
+            activateBumbleBee();
           }
         }}
         className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl"
       >
-        Start with Bumble Bee
+        Chat with Bumble Bee
       </button>
     </div>
   );
