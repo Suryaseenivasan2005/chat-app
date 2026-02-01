@@ -101,7 +101,7 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/api\.your-backend\.com\/.*/i,
+            urlPattern: /^https:\/\/talklet-backend\.onrender\.com\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'api-cache',

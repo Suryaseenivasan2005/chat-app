@@ -114,18 +114,20 @@ io.on("connection", (socket) => {
   });
 });
 
-// Middleware setup
-app.use(express.json({ limit: "4mb" }));
-
 // Express CORS setup
 app.use(cors({
   origin: allowedOrigins,
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
   maxAge: 86400, // 24 hours
   allowedHeaders: ['Content-Type', 'Authorization'],
   exposedHeaders: ['Content-Range', 'X-Content-Range']
 }));
+
+
+// Middleware setup
+app.use(express.json({ limit: "4mb" }));
+
 
 // Routes setup
 app.use("/api/status", (req, res) => res.send("Server is live"));
