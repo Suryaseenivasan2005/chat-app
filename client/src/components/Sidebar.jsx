@@ -1,7 +1,8 @@
 import React, { useContext, useState, useEffect } from 'react';
 import assets from '../assets/assets.js';
 import { useNavigate } from 'react-router-dom';
-import img99 from '../assets/img99.jpeg';
+
+import talknetSvg from '../assets/talknet.svg';
 import { AuthContext } from '../../context/AuthContext';
 import { ChatContext } from '../../context/ChatContext';
 import { NotificationContext } from '../../context/NotificationContext';
@@ -46,7 +47,7 @@ const Sidebar = () => {
         {/* Header */}
         <div className="pb-5">
           <div className="flex justify-between items-center">
-            <img src={img99} alt="logo" className="max-w-10 rounded-xl cursor-pointer" onClick={() => navigate('/friends/request')} />
+            <img src={talknetSvg} alt="logo" className="max-w-10 rounded-xl cursor-pointer" onClick={() => navigate('/friends/request')} />
             <p>Talklet</p>
             <div className="flex items-center gap-2">
               {/* Mail Icon for Notifications */}
@@ -117,86 +118,67 @@ const Sidebar = () => {
 
         {/* User List */}
         <div className="flex flex-col flex-1">
-          {/* Bumble Bee Bot - Pinned to top when active */}
-          {isBumbleBeeActive && filteredUsers.filter(user => user.isBot).map((user, index) => (
-            <div
-              onClick={() => setSelectedUser(user)}
-              key={`bot-${index}`}
-              className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm border-b border-violet-500/20
-              ${selectedUser?._id === user._id ? 'bg-[#282142]/50' : ''}
-            `}
-            >
-              <div className="relative w-[44px] h-[44px]">
-                <img
-                  src={user.isBot ? assets.Chitti : (user?.profilePic || assets.avatar_icon)}
-                  alt={`${user.fullName}'s profile`}
-                  className="w-full h-full rounded-full object-cover"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = assets.avatar_icon;
-                  }}
-                />
-                {/* Bot badge */}
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] bg-violet-500 transition-colors duration-300">
+          {/* All Users (including Bumble Bee when active) - sorted by last message */}
+          {filteredUsers
+            .filter(user => {
+              // Filter out bot if not activated yet
+              if (user.isBot && !isBumbleBeeActive) return false;
+              return true;
+            })
+            .map((user, index) => (
+              <div
+                onClick={() => setSelectedUser(user)}
+                key={user._id || index}
+                className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm
+                ${selectedUser?._id === user._id ? 'bg-[#282142]/50' : ''}
+              `}
+              >
+                <div className="relative w-[44px] h-[44px]">
+                  <img
+                    src={user.isBot ? assets.Chitti : (user?.profilePic || assets.avatar_icon)}
+                    alt={`${user.fullName}'s profile`}
+                    className="w-full h-full rounded-full object-cover"
+                    onError={(e) => {
+                      console.log('Profile pic load error:', e.target.src);
+                      e.target.onerror = null;
+                      e.target.src = assets.avatar_icon;
+                    }}
+                  />
+                  {user.isBot ? (
+                    /* Bot badge */
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] bg-violet-500 transition-colors duration-300">
+                    </div>
+                  ) : (
+                    /* Online indicator for human users */
+                    onlineUsers.includes(user._id) && (
+                      <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] bg-green-500 transition-colors duration-300">
+                      </div>
+                    )
+                  )}
                 </div>
-              </div>
-              <div className="flex flex-col leading-5">
-                <p className="text-base font-medium">{user.fullName}</p>
-                <span className="text-sm text-violet-400">
-                  🤖 Bot Assistant
-                </span>
-              </div>
-
-              {unseenMessages?.[user._id] > 0 && (
-                <div className='absolute top-2 right-2 h-5 w-5 flex justify-center items-center rounded-full bg-violet-500 text-white text-xs font-medium'>
-                  {unseenMessages[user._id]}
+                <div className="flex flex-col leading-5">
+                  <p className="text-base font-medium">{user.fullName}</p>
+                  {user.isBot ? (
+                    <span className="text-sm text-violet-400">
+                      🤖 Bot Assistant
+                    </span>
+                  ) : (
+                    <span className={`text-sm transition-colors duration-300 ${onlineUsers.includes(user._id)
+                      ? 'text-green-400'
+                      : 'text-neutral-400'
+                      }`}>
+                      {onlineUsers.includes(user._id) ? 'Online' : 'Offline'}
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
-          ))}
 
-          {/* Human Users */}
-          {filteredUsers.filter(user => !user.isBot).map((user, index) => (
-            <div
-              onClick={() => setSelectedUser(user)}
-              key={index}
-              className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm
-              ${selectedUser?._id === user._id ? 'bg-[#282142]/50' : ''}
-            `}
-            >
-              <div className="relative w-[44px] h-[44px]">
-                <img
-                  src={user?.profilePic || assets.avatar_icon}
-                  alt={`${user.fullName}'s profile`}
-                  className="w-full h-full rounded-full object-cover"
-                  onError={(e) => {
-                    console.log('Profile pic load error:', e.target.src);
-                    e.target.onerror = null; // Prevent infinite loop
-                    e.target.src = assets.avatar_icon;
-                  }}
-                />
-                {onlineUsers.includes(user._id) && (
-                  <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#282142] bg-green-500 transition-colors duration-300">
+                {unseenMessages?.[user._id] > 0 && (
+                  <div className='absolute top-2 right-2 h-5 w-5 flex justify-center items-center rounded-full bg-violet-500 text-white text-xs font-medium'>
+                    {unseenMessages[user._id]}
                   </div>
                 )}
               </div>
-              <div className="flex flex-col leading-5">
-                <p className="text-base font-medium">{user.fullName}</p>
-                <span className={`text-sm transition-colors duration-300 ${onlineUsers.includes(user._id)
-                  ? 'text-green-400'
-                  : 'text-neutral-400'
-                  }`}>
-                  {onlineUsers.includes(user._id) ? 'Online' : 'Offline'}
-                </span>
-              </div>
-
-              {unseenMessages?.[user._id] > 0 && (
-                <div className='absolute top-2 right-2 h-5 w-5 flex justify-center items-center rounded-full bg-violet-500 text-white text-xs font-medium'>
-                  {unseenMessages[user._id]}
-                </div>
-              )}
-            </div>
-          ))}
+            ))}
           {/* Groups */}
           {/* groups are mixed into users now */}
         </div>
@@ -211,7 +193,7 @@ const Sidebar = () => {
             onClick={() => navigate('/friends/request')}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-green-700 transition-colors duration-300 shadow-lg"
           >
-            <span className="text-white text-sm font-medium">Add Friend</span>
+            <span className="text-white text-sm font-medium">Discover</span>
             <span className="text-white text-lg">+</span>
           </button>
 

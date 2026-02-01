@@ -480,7 +480,7 @@ const Chatbox = () => {
       )}
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center gap-6 text-gray-300 bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 max-md:hidden h-full px-8 backdrop-blur-lg">
+    <div className="flex flex-col items-center justify-center gap-6 text-gray-300 bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 h-full px-8 backdrop-blur-lg">
       {/* Bumble Bee Animated GIF */}
       <div className="relative">
         <img
