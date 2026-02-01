@@ -2,27 +2,36 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import http from "http";
+import { Server } from "socket.io";
 import { connectDB } from "./lib/db.js";
 import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import groupRouter from "./routes/groupRoutes.js";
 import friendRouter from "./routes/friendRoutes.js";
-import { Server } from "socket.io"
+import Message from "./models/message.js";
 
 // Create Express App and HTTp server
 const app = express();
-const server = http.createServer(app)
+const server = http.createServer(app);
+
+// Shared allowed origins
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://talklet.app",
+  "https://www.talklet.app",
+  "https://talklet-beta.vercel.app"
+];
 
 // Initialize socket.io server with proper CORS and timeout settings
 export const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://talklet-beta.vercel.app"],
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true
   },
   pingTimeout: 60000,
   pingInterval: 25000
-})
+});
 
 // store online users
 export const userSocketMap = {}; //{userId : socketId}
@@ -103,24 +112,14 @@ io.on("connection", (socket) => {
       io.emit("getOnlineUsers", Object.keys(userSocketMap));
     }
   });
-})
+});
 
 // Middleware setup
 app.use(express.json({ limit: "4mb" }));
-// Update the CORS configuration with enhanced security
-const allowedOrigins = ["http://localhost:5173", "http://127.0.0.1:5173", "https://talklet-beta.vercel.app"];
 
+// Express CORS setup
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true,
   maxAge: 86400, // 24 hours
@@ -131,55 +130,10 @@ app.use(cors({
 // Routes setup
 app.use("/api/status", (req, res) => res.send("Server is live"));
 app.use("/api/auth", userRouter);
-app.use("/api/users", userRouter); // Add this line for user routes
+app.use("/api/users", userRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/groups", groupRouter);
 app.use("/api/friends", friendRouter);
-
-// Modify the part where you connect to MongoDB and start the server
-
-// Connect to MongoDB first, then start the server
-const startServer = async () => {
-  try {
-    await connectDB();
-    const PORT = process.env.PORT || 5000;
-    server.listen(PORT, () => console.log("Server is running on PORT:" + PORT));
-  } catch (error) {
-    console.log("Failed to start server:", error);
-    process.exit(1);
-  }
-};
-
-// In production (Vercel) we shouldn't call `server.listen` because Vercel
-// handles the server lifecycle. But we must ensure a MongoDB connection is
-// initiated so Mongoose does not buffer operations and timeout. Start the
-// DB connection on module load and only start the HTTP listener in
-// development.
-if (process.env.NODE_ENV !== 'production') {
-  // Development: connect and then start the HTTP server
-  startServer();
-} else {
-  // Production (Vercel): initiate DB connection but do not call listen()
-  connectDB().catch((err) => {
-    console.error('Failed to connect to MongoDB in production:', err);
-  });
-}
-
-// Export server for Vercel
-export default server;
-
-// // # Install Claude Code
-// npm install -g @anthropic-ai/claude-code
-
-// # Navigate to your project
-// cd your-awesome-project
-
-// # Start coding with Claude
-// claude
-// # You'll be prompted to log in on first use
-
-// Import Message model
-import Message from "./models/message.js";
 
 // Schedule message cleanup (run daily)
 const cleanupMessages = async () => {
@@ -233,3 +187,17 @@ const cleanupMessages = async () => {
 
 // Run cleanup once a day
 setInterval(cleanupMessages, 24 * 60 * 60 * 1000);
+
+// Connect to MongoDB using generic start logic
+const startServer = async () => {
+  try {
+    await connectDB();
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => console.log("Server is running on PORT:" + PORT));
+  } catch (error) {
+    console.log("Failed to start server:", error);
+    process.exit(1);
+  }
+};
+
+startServer();
