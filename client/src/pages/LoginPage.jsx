@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef } from 'react';
 import assets from '../assets/assets';
 import img99 from '../assets/img99.jpeg';
 import { AuthContext } from '../../context/AuthContext';
@@ -34,6 +34,7 @@ const LoginPage = () => {
   const [isDataSubmitted, setIsDataSubmitted] = useState(false);
   const [profilePic, setProfilePic] = useState("");
   const [customProfilePic, setCustomProfilePic] = useState("");
+  const fileInputRef = useRef(null);
 
   const { login } = useContext(AuthContext);
 
@@ -46,10 +47,10 @@ const LoginPage = () => {
     const profilePicToSubmit = customProfilePic || profilePic;
     login(
       currentState === "Sign up" ? 'signup' : 'login',
-      { 
-        fullName, 
-        email, 
-        password, 
+      {
+        fullName,
+        email,
+        password,
         bio,
         ...(profilePicToSubmit ? { profilePic: profilePicToSubmit } : {})
       }
@@ -62,7 +63,7 @@ const LoginPage = () => {
       <img src={img99} alt="" style={{ borderRadius: '12px' }} className="w-88 h-88" />
 
       {/* Right Column */}
-      <form onSubmit={onSubmitHandler} className="border-2 bg-white/8 text-white border-gray-500 p-6 flex flex-col gap-6 rounded-lg shadow-lg">
+      <form onSubmit={onSubmitHandler} className="border-2 bg-white/8 text-white border-gray-500 p-6 flex flex-col gap-6 rounded-lg shadow-lg w-96">
         <h2 className="font-medium text-5xl flex justify-between items-center">
           {currentState}
           {isDataSubmitted && (
@@ -115,63 +116,64 @@ const LoginPage = () => {
               required
               className="p-2 border border-gray-500 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            
+
             {/* Profile Picture Selection */}
             <div className="space-y-4">
               <p className="text-sm">Choose a profile picture:</p>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3 place-items-center max-h-48 overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+                {/* Upload Custom - First Item */}
+                <div
+                  className={`relative w-16 h-16 rounded-full flex items-center justify-center cursor-pointer overflow-hidden border-2 ${customProfilePic ? 'border-purple-500' : 'border-gray-600 border-dashed hover:border-purple-400'
+                    } bg-white/5 transition-all duration-300`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {customProfilePic ? (
+                    <img
+                      src={customProfilePic}
+                      alt="Custom upload"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-gray-400 hover:text-purple-400">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    hidden
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setCustomProfilePic(reader.result);
+                          setProfilePic(""); // Clear selected default
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Default Avatars */}
                 {defaultProfilePics.map((pic, index) => (
                   <img
                     key={index}
                     src={pic.src}
                     alt={pic.alt}
-                    className={`w-16 h-16 rounded-full object-cover cursor-pointer border-2 ${
-                      profilePic === pic.src ? 'border-purple-500' : 'border-transparent'
-                    } hover:border-purple-300`}
+                    className={`w-16 h-16 rounded-full object-cover cursor-pointer border-2 transition-all duration-300 ${profilePic === pic.src ? 'border-purple-500 scale-105' : 'border-transparent hover:border-purple-300'
+                      }`}
                     onClick={() => {
                       setProfilePic(pic.src);
-                      setCustomProfilePic("");
+                      setCustomProfilePic(""); // Clear custom upload
                     }}
                   />
                 ))}
               </div>
-              
-              <div className="flex items-center gap-4">
-                <p className="text-sm">Or upload your own:</p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setCustomProfilePic(reader.result);
-                        setProfilePic("");
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="text-sm text-gray-400"
-                />
-              </div>
-              
-              {customProfilePic && (
-                <div className="flex items-center gap-4">
-                  <img
-                    src={customProfilePic}
-                    alt="Custom profile"
-                    className="w-16 h-16 rounded-full object-cover border-2 border-purple-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setCustomProfilePic("")}
-                    className="text-sm text-red-400 hover:text-red-500"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
             </div>
           </>
         )}
