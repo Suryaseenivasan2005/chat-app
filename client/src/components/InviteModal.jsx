@@ -20,8 +20,8 @@ const InviteModal = ({ onClose }) => {
     try {
       if (navigator.share) {
         await navigator.share({
-          title: 'Join me on Vetti Pechu',
-          text: 'Hey! Join me on Vetti Pechu for real-time messaging.',
+          title: 'Join me on Talklet',
+          text: 'Hey! Join me on Talklet for real-time messaging.',
           url: inviteLink
         });
       } else {
@@ -41,7 +41,7 @@ const InviteModal = ({ onClose }) => {
           <h4 className="text-sm font-medium">Invite Friends</h4>
           <button onClick={onClose} className="text-xs opacity-70">Close</button>
         </div>
-        
+
         <div className="mb-4">
           <p className="text-xs text-gray-300 mb-2">Share this link with your friends to invite them:</p>
           <div className="flex items-center gap-2 bg-[#1e1932] p-2 rounded">
@@ -53,9 +53,8 @@ const InviteModal = ({ onClose }) => {
             />
             <button
               onClick={copyLink}
-              className={`text-xs px-3 py-1 rounded ${
-                copied ? 'bg-green-600' : 'bg-violet-600 hover:bg-violet-700'
-              } transition-colors duration-300`}
+              className={`text-xs px-3 py-1 rounded ${copied ? 'bg-green-600' : 'bg-violet-600 hover:bg-violet-700'
+                } transition-colors duration-300`}
             >
               {copied ? 'Copied!' : 'Copy'}
             </button>

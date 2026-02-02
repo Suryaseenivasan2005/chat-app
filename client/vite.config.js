@@ -11,8 +11,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Vetti Pechu',
-        short_name: 'Vetti Pechu',
+        name: 'Talklet',
+        short_name: 'Talklet',
         description: 'A real-time messaging app with voice and video calls',
         theme_color: '#8185B2',
         background_color: '#282142',

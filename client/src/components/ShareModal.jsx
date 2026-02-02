@@ -35,7 +35,7 @@ const ShareModal = ({ message, onClose }) => {
           {list.map(u => (
             <button key={u._id} onClick={() => forward(u)} className="w-full flex items-center gap-2 p-2 rounded hover:bg-white/10">
               {u.isBot ? (
-                <img src={assets.Chitti} alt="VettiBot" className="w-6 h-6 rounded-full object-cover" />
+                <img src={assets.Chitti} alt="Bumble Bee" className="w-6 h-6 rounded-full object-cover" />
               ) : u.profilePic ? (
                 <img src={u.profilePic} alt="" className="w-6 h-6 rounded-full object-cover" />
               ) : (

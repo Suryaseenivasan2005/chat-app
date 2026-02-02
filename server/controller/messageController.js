@@ -10,10 +10,10 @@ import googleAIConfig from "../lib/googleAIConfig.js";
 async function performWebSearch(query) {
   try {
     console.log("Performing web search for:", query);
-    
+
     // Array to store results from multiple sources
     const searchResults = [];
-    
+
     // First source: DuckDuckGo
     try {
       const ddgResponse = await axios.get(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`, {
@@ -22,9 +22,9 @@ async function performWebSearch(query) {
         },
         timeout: 8000 // 8 second timeout
       });
-      
+
       console.log("DuckDuckGo search response received");
-      
+
       if (ddgResponse.data && ddgResponse.data.AbstractText && ddgResponse.data.AbstractText.length > 0) {
         searchResults.push({
           answer: ddgResponse.data.AbstractText,
@@ -46,7 +46,7 @@ async function performWebSearch(query) {
           }
         });
       }
-      
+
       // Try to extract any useful information from the Infobox
       if (ddgResponse.data && ddgResponse.data.Infobox && ddgResponse.data.Infobox.content) {
         const content = ddgResponse.data.Infobox.content;
@@ -63,7 +63,7 @@ async function performWebSearch(query) {
     } catch (error) {
       console.error("DuckDuckGo search error:", error.message);
     }
-    
+
     // Second source: Wikipedia-specific search using MediaWiki API
     try {
       const wikiResponse = await axios.get(`https://en.wikipedia.org/w/api.php`, {
@@ -80,13 +80,13 @@ async function performWebSearch(query) {
         },
         timeout: 8000
       });
-      
+
       console.log("Wikipedia search response received");
-      
+
       if (wikiResponse.data && wikiResponse.data.query && wikiResponse.data.query.pages) {
         const pages = wikiResponse.data.query.pages;
         const pageIds = Object.keys(pages);
-        
+
         for (const pageId of pageIds) {
           if (pageId !== '-1') { // -1 means no results
             const page = pages[pageId];
@@ -104,17 +104,17 @@ async function performWebSearch(query) {
     } catch (error) {
       console.error("Wikipedia search error:", error.message);
     }
-    
+
     // Sort results by confidence
     searchResults.sort((a, b) => b.confidence - a.confidence);
-    
+
     if (searchResults.length > 0) {
       return {
         success: true,
         results: searchResults
       };
     }
-    
+
     console.log("No results found in any search response");
     return { success: false, message: "No results found" };
   } catch (error) {
@@ -129,27 +129,27 @@ const simpleResponses = {
   farewell: ["Goodbye!", "See you later!", "Take care!", "Bye!"],
   thanks: ["You're welcome!", "No problem!", "Glad to help!", "Anytime!"],
   help: ["I'm here to help! What do you need?", "How can I assist you?", "What can I do for you?"],
-  name: ["My name is VettiBot!", "I'm VettiBot, nice to meet you!", "I'm VettiBot, how can I help you today?"],
+  name: ["My name is Bumble Bee!", "I'm Bumble Bee, nice to meet you!", "I'm Bumble Bee, how can I help you today?"],
   app_info: [
-    "VettiPechu is a real-time chat application developed by Surya S. It allows users to chat with friends, share media, and even talk to me - an AI assistant! The app features user profiles, group chats, and media sharing capabilities.",
-    "VettiPechu is a messaging app created by Surya S. It has features like real-time messaging, profile customization, media sharing, and an AI chatbot (that's me!).",
-    "This is VettiPechu, a chat application developed by Surya S. You can use it to message friends, create groups, share images and audio, and chat with me!"
+    "Talklet is a real-time chat application developed by Surya S. It allows users to chat with friends, share media, and even talk to me - an AI assistant! The app features user profiles, group chats, and media sharing capabilities.",
+    "Talklet is a messaging app created by Surya S. It has features like real-time messaging, profile customization, media sharing, and an AI chatbot (that's me!).",
+    "This is Talklet, a chat application developed by Surya S. You can use it to message friends, create groups, share images and audio, and chat with me!"
   ],
   features: [
-    "VettiPechu has many cool features! You can: 1) Chat with friends in real-time, 2) Create and join group chats, 3) Share images and audio messages, 4) Talk to me - an AI assistant, 5) Customize your profile with pictures, and 6) See who's online.",
-    "Some features of VettiPechu include: real-time messaging, group chats, media sharing (images and audio), AI chatbot assistance, user profiles, and online status indicators."
+    "Talklet has many cool features! You can: 1) Chat with friends in real-time, 2) Create and join group chats, 3) Share images and audio messages, 4) Talk to me - an AI assistant, 5) Customize your profile with pictures, and 6) See who's online.",
+    "Some features of Talklet include: real-time messaging, group chats, media sharing (images and audio), AI chatbot assistance, user profiles, and online status indicators."
   ],
   developer: [
-    "✨ VettiPechu was developed by Surya S, a talented full-stack developer passionate about creating innovative chat applications! 👨‍💻 He loves building user-friendly interfaces and powerful backend systems. 🚀",
-    "🌟 I was created by Surya S, the brilliant mind behind VettiPechu! He designed this app to provide a seamless chatting experience. 🧠 He's always working on new features to make this app even better! 💯",
-    "😎 Surya S is the creative developer who built VettiPechu from scratch! His expertise in modern web technologies makes this app smooth and responsive. 🛠️ He's constantly improving the user experience!",
-    "💫 Meet Surya S - the awesome developer of VettiPechu! With his coding skills and attention to detail, he created this amazing chat platform. 🎯 He's passionate about connecting people through technology!",
-    "❤️ VettiPechu is the brainchild of Surya S, a developer with a vision for better communication tools! 💻 His dedication to clean code and intuitive design is evident throughout the app!",
-    "⚡ Surya S is the tech wizard behind VettiPechu! 🧙‍♂️ His innovative approach to chat applications combines security, speed, and style in one amazing package!"
+    "✨ Talklet was developed by Surya S, a talented full-stack developer passionate about creating innovative chat applications! 👨‍💻 He loves building user-friendly interfaces and powerful backend systems. 🚀",
+    "🌟 I was created by Surya S, the brilliant mind behind Talklet! He designed this app to provide a seamless chatting experience. 🧠 He's always working on new features to make this app even better! 💯",
+    "😎 Surya S is the creative developer who built Talklet from scratch! His expertise in modern web technologies makes this app smooth and responsive. 🛠️ He's constantly improving the user experience!",
+    "💫 Meet Surya S - the awesome developer of Talklet! With his coding skills and attention to detail, he created this amazing chat platform. 🎯 He's passionate about connecting people through technology!",
+    "❤️ Talklet is the brainchild of Surya S, a developer with a vision for better communication tools! 💻 His dedication to clean code and intuitive design is evident throughout the app!",
+    "⚡ Surya S is the tech wizard behind Talklet! 🧙‍♂️ His innovative approach to chat applications combines security, speed, and style in one amazing package!"
   ],
   how_to_use: [
-    "To use VettiPechu, simply create an account, add friends, and start chatting! You can send text messages, images, and audio. You can also chat with me anytime!",
-    "Using VettiPechu is easy! Just log in, find your friends in the contacts list, and start messaging. You can also create groups for multiple people to chat together."
+    "To use Talklet, simply create an account, add friends, and start chatting! You can send text messages, images, and audio. You can also chat with me anytime!",
+    "Using Talklet is easy! Just log in, find your friends in the contacts list, and start messaging. You can also create groups for multiple people to chat together."
   ],
   weather: [
     "I'm sorry, I don't have access to weather information. You might want to check a weather app or website for that!",
@@ -162,8 +162,8 @@ const simpleResponses = {
     "What do you call a fake noodle? An impasta!"
   ],
   music: [
-    "I don't have the ability to play music, but VettiPechu lets you share audio messages with your friends!",
-    "While I can't play music for you, you can use other apps for that. VettiPechu is great for chatting though!"
+    "I don't have the ability to play music, but Talklet lets you share audio messages with your friends!",
+    "While I can't play music for you, you can use other apps for that. Talklet is great for chatting though!"
   ],
   hobbies: [
     "As a chatbot, my hobby is helping users like you! What are your hobbies?",
@@ -174,10 +174,10 @@ const simpleResponses = {
     "That's very kind of you to say!",
     "You just made my day! Thank you!"
   ],
-  unknown: ["I'm still learning. You can ask your question at my gurunathar https://gemini.google.com", 
-            "I'm not sure I understand. Please try asking at my gurunathar https://gemini.google.com as I'm still under development.", 
-            "Sorry, I don't have an answer for that yet. Try asking this to my gurunathar at https://gemini.google.com",
-            "I'm still under development. For better answers, please visit my gurunathar https://gemini.google.com"]
+  unknown: ["I'm still learning. You can ask your question at my gurunathar https://gemini.google.com",
+    "I'm not sure I understand. Please try asking at my gurunathar https://gemini.google.com as I'm still under development.",
+    "Sorry, I don't have an answer for that yet. Try asking this to my gurunathar at https://gemini.google.com",
+    "I'm still under development. For better answers, please visit my gurunathar https://gemini.google.com"]
 };
 
 // Helper function to get a random response from a category
@@ -189,7 +189,7 @@ const getRandomResponse = (category) => {
 // Simple AI chatbot logic
 const getSimpleAIResponse = async (message) => {
   const lowerMsg = message.toLowerCase();
-  
+
   if (lowerMsg.match(/\b(hi|hello|hey|greetings)\b/)) {
     return getRandomResponse('greeting');
   } else if (lowerMsg.match(/\b(bye|goodbye|see you|farewell)\b/)) {
@@ -198,16 +198,16 @@ const getSimpleAIResponse = async (message) => {
     return getRandomResponse('thanks');
   } else if (lowerMsg.match(/\b(help|assist|support)\b/)) {
     return getRandomResponse('help');
-  } else if (lowerMsg.match(/\b(what is your name|who are you|your name)\b/) || 
-            (lowerMsg.includes('name') && lowerMsg.includes('your'))) {
+  } else if (lowerMsg.match(/\b(what is your name|who are you|your name)\b/) ||
+    (lowerMsg.includes('name') && lowerMsg.includes('your'))) {
     return getRandomResponse('name');
-  } else if (lowerMsg.match(/\b(what is vettipechu|about vettipechu|this app|this application|tell me about|app info)\b/) ||
-            (lowerMsg.includes('vettipechu') && (lowerMsg.includes('what') || lowerMsg.includes('about')))) {
+  } else if (lowerMsg.match(/\b(what is talklet|about talklet|this app|this application|tell me about|app info)\b/) ||
+    (lowerMsg.includes('talklet') && (lowerMsg.includes('what') || lowerMsg.includes('about')))) {
     return getRandomResponse('app_info');
   } else if (lowerMsg.match(/\b(features|what can|functionality|capabilities|what does it do)\b/)) {
     return getRandomResponse('features');
   } else if (lowerMsg.match(/\b(who made|developer|creator|who created|who developed|who built)\b/) ||
-            (lowerMsg.includes('developer') || lowerMsg.includes('surya'))) {
+    (lowerMsg.includes('developer') || lowerMsg.includes('surya'))) {
     return getRandomResponse('developer');
   } else if (lowerMsg.match(/\b(how to use|how do i|instructions|guide|tutorial)\b/)) {
     return getRandomResponse('how_to_use');
@@ -226,7 +226,7 @@ const getSimpleAIResponse = async (message) => {
     try {
       console.log("No predefined response found, attempting web search");
       // Extract significant keyword(s) from the message by removing common stopwords
-      const stopwords = new Set(['the','is','in','at','which','on','a','an','and','or','of','for','to','what','who','when','where','why','how','was','were','are','it','that','this','these','those','i','you','he','she','they','we','my','your','his','her','their','but','by','with','as','be','from','have','has','had','do','does','did']);
+      const stopwords = new Set(['the', 'is', 'in', 'at', 'which', 'on', 'a', 'an', 'and', 'or', 'of', 'for', 'to', 'what', 'who', 'when', 'where', 'why', 'how', 'was', 'were', 'are', 'it', 'that', 'this', 'these', 'those', 'i', 'you', 'he', 'she', 'they', 'we', 'my', 'your', 'his', 'her', 'their', 'but', 'by', 'with', 'as', 'be', 'from', 'have', 'has', 'had', 'do', 'does', 'did']);
       const tokens = message.replace(/[.,!?;:\/()\[\]"']/g, ' ').split(/\s+/).map(t => t.trim()).filter(Boolean);
       const significant = tokens.filter(t => !stopwords.has(t.toLowerCase()));
       // Prefer a single keyword: pick the last significant token if multiple present
@@ -240,19 +240,19 @@ const getSimpleAIResponse = async (message) => {
       }
 
       const searchResult = await performWebSearch(query);
-      
+
       if (searchResult.success && searchResult.results && searchResult.results.length > 0) {
         console.log("Web search successful, returning answers");
-        
+
         // Get up to 3 results to display
         const resultsToShow = searchResult.results.slice(0, 3);
-        
+
         // Format the response with ChatGPT-like style - more empty lines, emojis, and better spacing
         const mainTopic = message.split(' ').slice(0, 3).join(' '); // Extract potential topic from query
-        
+
         // Create a title without symbols, just bold text with emoji
         let response = `✨ ${mainTopic.toUpperCase()} ✨\n\n`;
-        
+
         // Add subtitle as a separate point with empty lines and emoji
         let overviewSentence = "";
         if (resultsToShow[0] && resultsToShow[0].answer) {
@@ -266,14 +266,14 @@ const getSimpleAIResponse = async (message) => {
         } else {
           response += `💡 This is a topic I found some interesting information about.\n\n`;
         }
-        
+
         // Add heading for highlights with emoji instead of symbol
         response += `🔍 KEY HIGHLIGHTS 🔍\n\n`;
-        
+
         // Extract key points from the search results
         const allText = resultsToShow.map(result => result.answer).join(' ');
         let sentences = allText.split(/[.!?]+/).filter(s => s.trim().length > 15).slice(0, 7);
-        
+
         // Filter out sentences that are too similar to the overview
         if (overviewSentence) {
           sentences = sentences.filter(sentence => {
@@ -287,19 +287,19 @@ const getSimpleAIResponse = async (message) => {
             return similarity(sentence, overviewSentence) < 0.5;
           });
         }
-        
+
         // Limit to 5 sentences
         sentences = sentences.slice(0, 5);
-        
+
         // Add bullet points with emojis
         const bulletEmojis = ['🌟', '🔹', '💫', '✅', '📌'];
         sentences.forEach((sentence, index) => {
           const emoji = bulletEmojis[index % bulletEmojis.length];
           response += `• ${emoji} ${sentence.trim()}.\n\n`;
         });
-        
+
         // No sources section as requested
-        
+
         // Add follow-up suggestions without heading but with emojis
         const followUpSuggestions = [
           `🤔 Want to explore more about ${mainTopic} or learn about related topics?`,
@@ -307,10 +307,10 @@ const getSimpleAIResponse = async (message) => {
           `📚 This is just an overview of ${mainTopic}. Would you like to dive deeper into any particular area?`,
           `🔎 I can help you discover more about ${mainTopic} or explore similar topics.`
         ];
-        
+
         response += `${followUpSuggestions[Math.floor(Math.random() * followUpSuggestions.length)]}\n\n`;
         response += `🙂 I'm here to help!\n\n`;
-        
+
         return response;
       } else {
         // Fallback to unknown response if search fails
@@ -327,7 +327,7 @@ const getSimpleAIResponse = async (message) => {
 // ✅ Get AI response from Google AI Studio API with fallback to simple chatbot
 const getAIResponse = async (userMessage) => {
   const apiKey = googleAIConfig.apiKey;
-  
+
   try {
     const response = await axios.post(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
@@ -348,10 +348,10 @@ const getAIResponse = async (userMessage) => {
         timeout: 20000,
       }
     );
-    
+
     // Extract text from the response
     const responseText = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
+
     // If we got a valid response from the API, return it
     if (responseText && responseText.trim() !== "") {
       return responseText;
@@ -390,7 +390,7 @@ export const sendMessage = async (req, res) => {
       newMessage = await Message.create({ senderId, receiverId, text });
     }
 
-    // ✅ If chatting with VettiBot, get AI reply
+    // ✅ If chatting with Bumble Bee, get AI reply
     const receiverUser = await User.findById(receiverId);
     if (receiverUser?.isBot) {
       const aiText = await getAIResponse(text);
@@ -446,9 +446,17 @@ export const getUserForSidebar = async (req, res) => {
   try {
     const currentUserId = req.user._id.toString();
 
-    // Ensure the AI bot exists (create if missing)
-    let bot = await User.findOne({ fullName: "Bumble Bee", isBot: true });
-    if (!bot) {
+    // Ensure the AI bot exists and is named Bumble Bee
+    let bot = await User.findOne({ isBot: true });
+
+    if (bot) {
+      // Update name if it's still the old one
+      if (bot.fullName !== "Bumble Bee") {
+        bot.fullName = "Bumble Bee";
+        await bot.save();
+      }
+    } else {
+      // Create new if doesn't exist
       bot = await User.create({
         fullName: "Bumble Bee",
         profilePic: "/static/chitti.jpg",
@@ -459,7 +467,7 @@ export const getUserForSidebar = async (req, res) => {
 
     // Import FriendRequest model
     const FriendRequest = (await import("../models/FriendRequest.js")).default;
-    
+
     // Get accepted friends
     const acceptedRequests = await FriendRequest.find({
       $or: [
@@ -469,12 +477,12 @@ export const getUserForSidebar = async (req, res) => {
     });
 
     // Extract friend IDs
-    const friendIds = acceptedRequests.map(req => 
+    const friendIds = acceptedRequests.map(req =>
       req.senderId.toString() === currentUserId ? req.receiverId : req.senderId
     );
 
     // Fetch accepted friends and bot
-    let users = await User.find({ 
+    let users = await User.find({
       _id: { $in: [...friendIds, bot._id] }
     });
 
