@@ -16,6 +16,7 @@ const Sidebar = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isBumbleBeeActive, setIsBumbleBeeActive] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,6 +24,10 @@ const Sidebar = () => {
     // Check if Bumble Bee has been activated
     const bumbleBeeActive = localStorage.getItem('bumblebee_active') === 'true';
     setIsBumbleBeeActive(bumbleBeeActive);
+
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Listen for custom event when Bumble Bee becomes active
@@ -121,7 +126,7 @@ const Sidebar = () => {
           {/* All Users (including Bumble Bee when active) - sorted by last message */}
           {filteredUsers
             .filter(user => {
-              // Filter out bot if not activated yet
+              // Hide bot until it's activated, then keep it forever
               if (user.isBot && !isBumbleBeeActive) return false;
               return true;
             })

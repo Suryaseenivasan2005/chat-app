@@ -26,6 +26,42 @@ const Chatbox = () => {
   const [showHeader, setShowHeader] = useState(true);
   const chatAreaRef = useRef(null);
   const lastScrollTop = useRef(0);
+  const [hasBotHistory, setHasBotHistory] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Check if we have history with the bot to hide onboarding UI
+  useEffect(() => {
+    const checkBotHistory = async () => {
+      // Only check when no user is selected (welcome screen)
+      if (selectedUser) return;
+
+      const botUser = users?.find(u => u.isBot);
+      if (botUser) {
+        if (localStorage.getItem('bumblebee_active') === 'true') {
+          setHasBotHistory(true);
+        } else {
+          // Verify with server if storage is empty (new device/cleared cache)
+          try {
+            const { data } = await axios.get(`/api/messages/${botUser._id}`);
+            if (data.success && data.messages.length > 0) {
+              setHasBotHistory(true);
+              localStorage.setItem('bumblebee_active', 'true');
+            }
+          } catch (error) {
+            console.error("Error checking bot history", error);
+          }
+        }
+      }
+    };
+
+    checkBotHistory();
+  }, [selectedUser, users, axios]);
 
   // Handle scroll to detect direction and show/hide header like WhatsApp
   useEffect(() => {
@@ -65,6 +101,7 @@ const Chatbox = () => {
   const activateBumbleBee = () => {
     if (localStorage.getItem('bumblebee_active') !== 'true') {
       localStorage.setItem('bumblebee_active', 'true');
+      setHasBotHistory(true);
       // Dispatch custom event to notify Sidebar
       window.dispatchEvent(new Event('bumblebee-activated'));
     }
@@ -480,42 +517,46 @@ const Chatbox = () => {
       )}
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center gap-6 text-gray-300 bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 h-full px-8 backdrop-blur-lg">
-      {/* Bumble Bee Animated GIF */}
-      <div className="relative">
-        <img
-          src={assets.hiHeyGif}
-          alt="Bumble Bee"
-          className="w-24 h-24 object-contain"
-          style={{ imageRendering: 'pixelated' }}
-        />
+    (!(isMobile && hasBotHistory)) ? (
+      <div className="flex flex-col items-center justify-center gap-6 text-gray-300 bg-gradient-to-br from-[#1a1a2e]/80 to-[#16213e]/80 h-full px-8 backdrop-blur-lg">
+        {/* Bumble Bee Animated GIF */}
+        <div className="relative">
+          <img
+            src={assets.hiHeyGif}
+            alt="Bumble Bee"
+            className="w-24 h-24 object-contain"
+            style={{ imageRendering: 'pixelated' }}
+          />
+        </div>
+
+        {/* Welcome Heading */}
+        <h1 className="text-3xl font-bold text-white text-center">
+          Say hi to Bumble Bee 🐝
+        </h1>
+
+        {/* Body Text */}
+        <p className="text-center text-gray-400 max-w-md leading-relaxed">
+          I'm here to help you get started. This app is new, so conversations begin here.
+        </p>
+
+        {/* Primary CTA Button */}
+        {!hasBotHistory && (
+          <button
+            onClick={() => {
+              const botUser = users?.find(user => user.isBot);
+              if (botUser) {
+                setSelectedUser(botUser);
+                // Activate Bumble Bee in sidebar
+                activateBumbleBee();
+              }
+            }}
+            className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl"
+          >
+            Chat with Bumble Bee
+          </button>
+        )}
       </div>
-
-      {/* Welcome Heading */}
-      <h1 className="text-3xl font-bold text-white text-center">
-        Say hi to Bumble Bee 🐝
-      </h1>
-
-      {/* Body Text */}
-      <p className="text-center text-gray-400 max-w-md leading-relaxed">
-        I'm here to help you get started. This app is new, so conversations begin here.
-      </p>
-
-      {/* Primary CTA Button */}
-      <button
-        onClick={() => {
-          const botUser = users?.find(user => user.isBot);
-          if (botUser) {
-            setSelectedUser(botUser);
-            // Activate Bumble Bee in sidebar
-            activateBumbleBee();
-          }
-        }}
-        className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-semibold rounded-full shadow-lg transform transition-all duration-200 hover:scale-105 hover:shadow-xl"
-      >
-        Chat with Bumble Bee
-      </button>
-    </div>
+    ) : null
   );
 };
 
