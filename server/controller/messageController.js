@@ -131,29 +131,71 @@ const simpleResponses = {
   help: ["I'm here to help! What do you need?", "How can I assist you?", "What can I do for you?"],
   name: ["My name is Bumble Bee!", "I'm Bumble Bee, nice to meet you!", "I'm Bumble Bee, how can I help you today?"],
   app_info: [
-    "Talklet is a real-time chat application developed by Surya S. It allows users to chat with friends, share media, and even talk to me - an AI assistant! The app features user profiles, group chats, and media sharing capabilities.",
-    "Talklet is a messaging app created by Surya S. It has features like real-time messaging, profile customization, media sharing, and an AI chatbot (that's me!).",
-    "This is Talklet, a chat application developed by Surya S. You can use it to message friends, create groups, share images and audio, and chat with me!"
+    `Talklet is a premium real-time chat application designed for a sleek and modern messaging experience! ✨
+
+🚀 **WHAT IS TALKLET?**
+It's a platform where you can chat with friends in real-time, share your best moments through images, and send voice notes. Whether it's 1-on-1 or group chats, we've got you covered!
+
+🛠️ **TECHNOLOGY USED**
+Talklet is built using the latest modern tech:
+• **Frontend**: React 19, Vite, and Tailwind CSS for that stunning glassmorphism design.
+• **Backend**: A robust Node.js and Express setup.
+• **Database**: MongoDB for secure data storage.
+• **Real-time**: Socket.io ensures your messages arrive instantly!
+
+Shall I tell you about the security details of the app?`
+  ],
+  tech_stack: [
+    `Talklet is built with a state-of-the-art tech stack! 🛠️
+
+💻 **FRONTEND**
+• **React 19**: Latest features for a smooth UI.
+• **Vite**: Ultra-fast developer experience.
+• **Tailwind CSS**: Premium minimalist styling.
+• **Socket.io Client**: Real-time bi-directional events.
+
+⚙️ **BACKEND & DATA**
+• **Node.js & Express.js**: Our scalable server engine.
+• **MongoDB & Mongoose**: Secure NoSQL data storage.
+• **Cloudinary**: Handling all your profile media.
+• **JWT**: Keeping your sessions secure.
+
+Shall I tell you about the security details of the app?`
+  ],
+  security: [
+    `Security is a top priority at Talklet! 🔒 Here's how we protect your information:
+
+🔑 **Authentication**
+We use **JWT (JSON Web Tokens)** for secure login sessions and **Bcrypt.js** to hash your passwords, so they're never stored in plain text.
+
+🛡️ **Data Transit**
+Your messages are transmitted over secure **SSL/TLS (HTTPS)** connections, preventing anyone from eavesdropping on your conversations.
+
+🧹 **Privacy Controls**
+We have an automated cleanup system that securely removes messages older than 30 days to keep your data footprint small and private.
+
+Right now, we use server-side encryption with strict access controls, and full End-to-End Encryption (E2EE) is a planned upgrade for our security roadmap! 🚀
+
+Is there anything else you'd like to know about our security?`
   ],
   features: [
-    "Talklet has many cool features! You can: 1) Chat with friends in real-time, 2) Create and join group chats, 3) Share images and audio messages, 4) Talk to me - an AI assistant, 5) Customize your profile with pictures, and 6) See who's online.",
-    "Some features of Talklet include: real-time messaging, group chats, media sharing (images and audio), AI chatbot assistance, user profiles, and online status indicators."
+    "Talklet has many cool features! You can: 1) Chat with friends in real-time, 2) Create and join group chats, 3) Share images and audio messages, 4) Talk to me - your AI assistant, 5) Customize your profile with 40+ premium avatars, and 6) Enjoy Voice & Video calls! Shall I tell you more about the tech used?",
+    "Some features of Talklet include: real-time messaging, group chats, media sharing (images and audio), Voice & Video calls, unique user profiles, and an AI chatbot! Shall I tell you about the security details of the app?"
   ],
   developer: [
     "✨ Talklet was developed by Surya S, a talented full-stack developer passionate about creating innovative chat applications! 👨‍💻 He loves building user-friendly interfaces and powerful backend systems. 🚀",
     "🌟 I was created by Surya S, the brilliant mind behind Talklet! He designed this app to provide a seamless chatting experience. 🧠 He's always working on new features to make this app even better! 💯",
-    "😎 Surya S is the creative developer who built Talklet from scratch! His expertise in modern web technologies makes this app smooth and responsive. 🛠️ He's constantly improving the user experience!",
-    "💫 Meet Surya S - the awesome developer of Talklet! With his coding skills and attention to detail, he created this amazing chat platform. 🎯 He's passionate about connecting people through technology!",
-    "❤️ Talklet is the brainchild of Surya S, a developer with a vision for better communication tools! 💻 His dedication to clean code and intuitive design is evident throughout the app!",
+    "😎 Surya S is the creative developer who built Talklet from scratch! His expertise in modern web technologies makes this app smooth and responsive. 🛠️",
+    "💫 Meet Surya S - the awesome developer of Talklet! With his coding skills and attention to detail, he created this amazing chat platform. 🎯",
     "⚡ Surya S is the tech wizard behind Talklet! 🧙‍♂️ His innovative approach to chat applications combines security, speed, and style in one amazing package!"
   ],
   how_to_use: [
-    "To use Talklet, simply create an account, add friends, and start chatting! You can send text messages, images, and audio. You can also chat with me anytime!",
-    "Using Talklet is easy! Just log in, find your friends in the contacts list, and start messaging. You can also create groups for multiple people to chat together."
+    "To use Talklet, simply create an account, search for users to add as friends, and start chatting! You can send text, images, and audio. You can also chat with me anytime! Need help with the features?",
+    "Using Talklet is easy! Just log in, find your friends, and start messaging. You can also create groups for multiple people to chat together. Shall I tell you about the tech we used to build this?"
   ],
   weather: [
-    "I'm sorry, I don't have access to weather information. You might want to check a weather app or website for that!",
-    "I can't check the weather for you, but you can easily find that information online!"
+    "I'm sorry, I don't have access to live weather data yet, but I'm always here to chat! ☀️",
+    "I can't check the weather, but it's always sunny here in the Talklet servers! ☁️"
   ],
   jokes: [
     "Why don't scientists trust atoms? Because they make up everything!",
@@ -162,20 +204,20 @@ const simpleResponses = {
     "What do you call a fake noodle? An impasta!"
   ],
   music: [
-    "I don't have the ability to play music, but Talklet lets you share audio messages with your friends!",
-    "While I can't play music for you, you can use other apps for that. Talklet is great for chatting though!"
+    "I can't play music, but Talklet lets you share audio messages with your friends! 🎧",
+    "I don't have a playlist, but I can definitely chat about your favorite tunes! 🎵"
   ],
   hobbies: [
-    "As a chatbot, my hobby is helping users like you! What are your hobbies?",
-    "I enjoy chatting with people and learning new things. What about you?"
+    "As a chatbot, my hobby is helping users like you get the most out of Talklet! What are your hobbies?",
+    "I enjoy learning about web development and chatting with people. What about you?"
   ],
   compliment: [
     "Thank you! You're pretty awesome yourself!",
     "That's very kind of you to say!",
     "You just made my day! Thank you!"
   ],
-  unknown: ["I'm still learning. You can ask your question at my gurunathar https://gemini.google.com",
-    "I'm not sure I understand. Please try asking at my gurunathar https://gemini.google.com as I'm still under development.",
+  unknown: ["I'm still learning about that. You can ask my gurunathar at https://gemini.google.com for more deep dive answers!",
+    "I'm not sure I understand. Please try asking at my gurunathar https://gemini.google.com as I'm still learning about the world!",
     "Sorry, I don't have an answer for that yet. Try asking this to my gurunathar at https://gemini.google.com",
     "I'm still under development. For better answers, please visit my gurunathar https://gemini.google.com"]
 };
@@ -198,9 +240,13 @@ const getSimpleAIResponse = async (message) => {
     return getRandomResponse('thanks');
   } else if (lowerMsg.match(/\b(help|assist|support)\b/)) {
     return getRandomResponse('help');
+  } else if (lowerMsg.match(/\b(security|privacy|secure|private|encrypt|protected)\b/)) {
+    return getRandomResponse('security');
   } else if (lowerMsg.match(/\b(what is your name|who are you|your name)\b/) ||
     (lowerMsg.includes('name') && lowerMsg.includes('your'))) {
     return getRandomResponse('name');
+  } else if (lowerMsg.match(/\b(tech|stack|technology|build|built|framework|language|use|using)\b/)) {
+    return getRandomResponse('tech_stack');
   } else if (lowerMsg.match(/\b(what is talklet|about talklet|this app|this application|tell me about|app info)\b/) ||
     (lowerMsg.includes('talklet') && (lowerMsg.includes('what') || lowerMsg.includes('about')))) {
     return getRandomResponse('app_info');

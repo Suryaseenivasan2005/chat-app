@@ -393,10 +393,12 @@ const Chatbox = () => {
                       : 'bg-gray-700 rounded-bl-none self-start text-left'
                       }`}
                     dangerouslySetInnerHTML={{
-                      __html: msg.text && msg.text.replace(
-                        /(https?:\/\/[^\s]+)/g,
-                        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-300 underline">$1</a>'
-                      )
+                      __html: msg.text && msg.text
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(
+                          /(https?:\/\/[^\s]+)/g,
+                          '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-300 underline">$1</a>'
+                        )
                     }}
                   ></p>
                 )}
