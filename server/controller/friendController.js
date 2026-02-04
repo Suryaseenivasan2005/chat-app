@@ -50,7 +50,7 @@ export const getAllUsers = async (req, res) => {
     const users = await User.find({
       _id: { $ne: currentUserId },
       isBot: { $ne: true }
-    }).select('fullName profilePic bio').lean();
+    }).select('fullName profilePic bio').sort({ createdAt: -1 }).lean();
 
     // Find any friend requests involving current user
     const friendRequests = await FriendRequest.find({
@@ -66,8 +66,8 @@ export const getAllUsers = async (req, res) => {
       const req = friendRequests.find(fr => (
         fr.senderId.toString() === currentUserId && fr.receiverId.toString() === uid
       ) || (
-        fr.receiverId.toString() === currentUserId && fr.senderId.toString() === uid
-      ));
+          fr.receiverId.toString() === currentUserId && fr.senderId.toString() === uid
+        ));
 
       return {
         ...u,
@@ -87,7 +87,7 @@ export const getAllUsers = async (req, res) => {
 export const getFriendRequests = async (req, res) => {
   try {
     const currentUserId = req.user._id;
-    
+
     const requests = await FriendRequest.find({
       receiverId: currentUserId,
       status: 'pending'
@@ -132,9 +132,9 @@ export const respondToFriendRequest = async (req, res) => {
       console.error('Failed to emit friendRequestUpdated', err.message);
     }
 
-    res.json({ 
-      success: true, 
-      message: `Friend request ${action}ed successfully` 
+    res.json({
+      success: true,
+      message: `Friend request ${action}ed successfully`
     });
   } catch (error) {
     console.log("Respond to friend request error:", error.message);
