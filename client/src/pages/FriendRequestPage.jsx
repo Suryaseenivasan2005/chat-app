@@ -25,10 +25,10 @@ const FriendRequestPage = () => {
       } catch (friendsError) {
         response = await axios.get('/api/users/all');
       }
-      
+
       if (response.data.success) {
         // Filter out current user and bot and already accepted friends
-        const filteredUsers = response.data.users.filter(user => 
+        const filteredUsers = response.data.users.filter(user =>
           user._id !== authUser._id && !user.isBot && user.friendshipStatus !== 'accepted'
         );
         setUsers(filteredUsers);
@@ -67,7 +67,7 @@ const FriendRequestPage = () => {
   const getProfilePic = (user) => {
     if (!user) return assets.avatar_icon;
     const pic = user.profilePic;
-    if (!pic) return assets.avatar_icon;
+    if (!pic) return `https://avatar.iran.liara.run/username?username=${encodeURIComponent(user.fullName)}`;
     // string cases
     if (typeof pic === 'string') {
       // already a data URI
@@ -84,11 +84,11 @@ const FriendRequestPage = () => {
     if (pic.secure_url) return pic.secure_url;
     if (pic.path) return `${window.location.origin}${pic.path}`;
     if (pic.src) return pic.src;
-    return assets.avatar_icon;
+    return `https://avatar.iran.liara.run/username?username=${encodeURIComponent(user.fullName)}`;
   };
 
   return (
-    <div className={`bg-[#8185B2]/10 min-h-screen flex flex-col text-white`}> 
+    <div className={`bg-[#8185B2]/10 min-h-screen flex flex-col text-white`}>
       <div className="flex-1 overflow-y-auto p-5">
         {/* Header (same as Sidebar) */}
         <div className="pb-5">

@@ -140,7 +140,7 @@ const Sidebar = () => {
               >
                 <div className="relative w-[44px] h-[44px]">
                   <img
-                    src={user.isBot ? assets.Chitti : (user?.profilePic || assets.avatar_icon)}
+                    src={user.isBot ? assets.Chitti : (user?.profilePic || `https://avatar.iran.liara.run/username?username=${encodeURIComponent(user.fullName)}`)}
                     alt={`${user.fullName}'s profile`}
                     className="w-full h-full rounded-full object-cover"
                     onError={(e) => {
