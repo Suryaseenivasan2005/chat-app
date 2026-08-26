@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import assets from '../assets/assets'
 import img99 from '../assets/img99.jpeg'
 import { AuthContext } from '../../context/AuthContext'
+import toast from 'react-hot-toast'
 
 // Import default profile pictures
 import dp1 from '../assets/profilepics/dp1.jpeg';
@@ -86,6 +87,13 @@ const ProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Block profile edits for demo users
+    if (authUser?.isDemo) {
+      toast.error('Sign in to edit your profile. This feature is disabled in Demo Mode.');
+      return;
+    }
+
     const payload = { fullName: name, bio };
 
     const readFileAsBase64 = (file) => new Promise((resolve) => {
@@ -110,7 +118,20 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-[#1a1a2e] bg-cover bg-no-repeat flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl backdrop-blur-3xl bg-white/5 text-gray-100 border border-white/10 flex items-stretch gap-0 max-md:flex-col-reverse rounded-3xl overflow-hidden shadow-2xl">
+      {/* Demo Mode Banner */}
+      {authUser?.isDemo && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600/90 to-indigo-600/90 backdrop-blur-sm text-white text-center py-2.5 px-4 text-sm font-semibold flex items-center justify-center gap-2 shadow-lg">
+          <span>🔒 Demo Mode</span>
+          <span className="text-purple-200 font-normal">— Profile editing is disabled.</span>
+          <button
+            onClick={() => navigate('/login')}
+            className="ml-3 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-lg text-xs font-bold transition-all"
+          >
+            Sign in to unlock →
+          </button>
+        </div>
+      )}
+      <div className={`w-full max-w-4xl backdrop-blur-3xl bg-white/5 text-gray-100 border border-white/10 flex items-stretch gap-0 max-md:flex-col-reverse rounded-3xl overflow-hidden shadow-2xl ${authUser?.isDemo ? 'mt-12' : ''}`}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-8 md:p-12 flex-1 bg-black/20">
           <div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Profile Details</h3>

@@ -77,6 +77,24 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginDemo = async () => {
+    try {
+      const { data } = await axios.post('/api/auth/demo-login');
+      if (data.success) {
+        setAuthUser(data.userData);
+        setToken(data.token);
+        localStorage.setItem("token", data.token);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${data.token}`;
+        connectSocket(data.userData);
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   const logout = async () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -147,6 +165,7 @@ export const AuthProvider = ({ children }) => {
     onlineUsers,
     socket,
     login,
+    loginDemo,
     logout,
     updateProfile,
     showInstallBanner,

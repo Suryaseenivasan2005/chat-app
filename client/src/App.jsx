@@ -12,6 +12,7 @@ import { CallingProvider } from '../context/CallingContext.jsx'
 import { NotificationProvider } from '../context/NotificationContext.jsx'
 import CallingInterface from './components/CallingInterface.jsx'
 import NotificationModal from './components/NotificationModal.jsx'
+import DemoIntroPage from './pages/DemoIntroPage.jsx'
 
 const App = () => {
   const { authUser } = useContext(AuthContext)
@@ -26,6 +27,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
             <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />
+            <Route path="/demo" element={<DemoIntroPage />} />
             <Route path="/profile" element={authUser ? <ProfilePage /> : <Navigate to="/login" />} />
             <Route path="/groups/create" element={authUser ? <GroupCreatePage /> : <Navigate to="/login" />} />
             <Route path="/friends/request" element={authUser ? <FriendRequestPage /> : <Navigate to="/login" />} />

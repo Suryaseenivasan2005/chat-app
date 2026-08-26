@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
   profilePic: { type: String, default: "" },
   bio: { type: String },
   backgroundImage: { type: String, default: "" },
-  isBot: { type: Boolean, default: false }
+  isBot: { type: Boolean, default: false },
+  isDemo: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

@@ -1,6 +1,7 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/User.js";
 import FriendRequest from "../models/FriendRequest.js";
+import Message from "../models/message.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
@@ -111,11 +112,12 @@ export const getUsers = async (req, res) => {
   try {
     const currentUserId = req.user._id;
 
-    // Find all users except current user and bots
-    const users = await User.find({
-      _id: { $ne: currentUserId },
-      isBot: { $ne: true }
-    })
+    // Determine user query based on if current user is a demo user
+    const userQuery = req.user.isDemo
+      ? { _id: { $ne: currentUserId }, isBot: true }
+      : { _id: { $ne: currentUserId }, isBot: { $ne: true } };
+
+    const users = await User.find(userQuery)
       .select('fullName email bio profilePic') // Select only needed fields
       .sort({ createdAt: -1 })
       .lean(); // Use lean for better performance
@@ -152,5 +154,68 @@ export const getUsers = async (req, res) => {
       success: false,
       message: "Failed to fetch users"
     });
+  }
+};
+
+// Demo login and setup
+export const loginDemo = async (req, res) => {
+  try {
+    // 1. Cleanup expired demo users
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
+    const expiredUsers = await User.find({ isDemo: true, createdAt: { $lt: fifteenMinsAgo } });
+    
+    if (expiredUsers.length > 0) {
+      const expiredUserIds = expiredUsers.map(u => u._id);
+      
+      // Delete their messages
+      await Message.deleteMany({ $or: [{ senderId: { $in: expiredUserIds } }, { receiverId: { $in: expiredUserIds } }] });
+      
+      // Delete their friend requests
+      await FriendRequest.deleteMany({ $or: [{ senderId: { $in: expiredUserIds } }, { receiverId: { $in: expiredUserIds } }] });
+      
+      // Delete the users
+      await User.deleteMany({ _id: { $in: expiredUserIds } });
+      console.log(`Cleaned up ${expiredUsers.length} expired demo users.`);
+    }
+
+    // 2. Create new Demo User
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const email = `demo_${Date.now()}@talklet.app`;
+    const password = await bcrypt.hash("demo_password_123", 10);
+
+    const demoUser = await User.create({
+      fullName: `Demo User ${randomSuffix}`,
+      email,
+      password,
+      bio: "I'm checking out Talklet in Demo mode! 🚀",
+      isDemo: true
+    });
+
+    // 3. Find Bumble Bee bot
+    const bot = await User.findOne({ isBot: true });
+    
+    if (bot) {
+      // Create accepted friend request between Demo User and Bot
+      await FriendRequest.create({
+        senderId: demoUser._id,
+        receiverId: bot._id,
+        status: "accepted"
+      });
+
+      // Send a welcome message from the bot
+      await Message.create({
+        senderId: bot._id,
+        receiverId: demoUser._id,
+        text: "Hi there! 👋 Welcome to Talklet's Demo Mode. I'm Bumble Bee. Feel free to send me messages here. Note that your session and data will be automatically reset after 15 minutes.",
+        isGroupMessage: false
+      });
+    }
+
+    // 4. Generate token and return
+    const token = generateToken(demoUser._id);
+    res.json({ success: true, userData: demoUser, token, message: "Demo session started successfully" });
+  } catch (err) {
+    console.error("Demo login error:", err);
+    res.status(500).json({ success: false, message: "Failed to start demo session" });
   }
 };
