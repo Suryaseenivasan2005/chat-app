@@ -17,7 +17,8 @@ function formatTimeLeft(ms) {
 
 const DEMO_DURATION_MS = 15 * 60 * 1000;
 
-function DemoBanner({ createdAt }) {
+// Small fixed pill timer — top-right, no interactions
+function DemoTimerPill({ createdAt }) {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState(null);
@@ -37,22 +38,18 @@ function DemoBanner({ createdAt }) {
     return () => clearInterval(id);
   }, [createdAt]);
 
-  const isUrgent = timeLeft !== null && timeLeft < 3 * 60 * 1000; // Last 3 minutes
+  const isUrgent = timeLeft !== null && timeLeft < 3 * 60 * 1000;
 
   return (
-    <div className={`w-full py-2 px-4 flex items-center justify-center gap-3 text-xs font-semibold text-white z-50 transition-colors duration-700 ${isUrgent ? 'bg-gradient-to-r from-red-600/80 to-orange-600/80' : 'bg-gradient-to-r from-purple-600/80 to-indigo-600/80'} backdrop-blur-sm`}>
-      <span>🔒 Demo Mode</span>
-      <span className="text-white/60 font-normal hidden sm:inline">—</span>
-      <span className="hidden sm:inline text-white/70 font-normal">Session expires in</span>
-      <span className={`font-mono font-bold text-sm ${isUrgent ? 'text-orange-200 animate-pulse' : 'text-purple-200'}`}>
-        {timeLeft !== null ? formatTimeLeft(timeLeft) : '--:--'}
-      </span>
-      <button
-        onClick={() => navigate('/login')}
-        className="ml-2 bg-white/20 hover:bg-white/30 px-2.5 py-0.5 rounded-lg transition-all"
-      >
-        Sign in →
-      </button>
+    <div
+      className={`fixed top-3 right-3 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold shadow-lg pointer-events-none select-none transition-colors duration-700
+        ${isUrgent
+          ? 'bg-red-600/80 text-orange-100 shadow-red-900/40'
+          : 'bg-black/50 text-purple-200 border border-purple-500/30 shadow-black/40'
+        } backdrop-blur-sm`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${isUrgent ? 'bg-orange-300 animate-pulse' : 'bg-purple-400'}`} />
+      {timeLeft !== null ? formatTimeLeft(timeLeft) : '--:--'}
     </div>
   );
 }
@@ -66,24 +63,24 @@ function HomePage() {
     : undefined;
 
   return (
-    <div className="flex flex-col w-full h-screen">
-      {authUser?.isDemo && <DemoBanner createdAt={authUser.createdAt} />}
+    <div
+      className="w-full h-screen bg-cover bg-center flex items-center justify-center"
+      style={bgStyle || { backgroundImage: "url('/bgImage.svg')" }}
+    >
+      {/* Fixed demo timer pill — top-right, non-interactive */}
+      {authUser?.isDemo && <DemoTimerPill createdAt={authUser.createdAt} />}
+
       <div
-        className="flex-1 bg-cover bg-center flex items-center justify-center overflow-hidden"
-        style={bgStyle || { backgroundImage: "url('/bgImage.svg')" }}
+        className={`w-full h-[90vh] max-w-6xl rounded-2xl overflow-hidden shadow-lg border border-gray-600 backdrop-blur-xl grid
+          ${selectedUser
+            ? 'grid-cols-1 md:grid-cols-[1fr_2fr_1fr]'
+            : 'grid-cols-1 md:grid-cols-[1fr_2fr]'
+          }`
+        }
       >
-        <div
-          className={`w-full h-full max-w-6xl rounded-2xl overflow-hidden shadow-lg border border-gray-600 backdrop-blur-xl grid
-            ${selectedUser
-              ? 'grid-cols-1 md:grid-cols-[1fr_2fr_1fr]'
-              : 'grid-cols-1 md:grid-cols-[1fr_2fr]'
-            }`
-          }
-        >
-          <Sidebar />
-          <Chatbox />
-          {selectedUser && <RightSidebar selectedUser={selectedUser} />}
-        </div>
+        <Sidebar />
+        <Chatbox />
+        {selectedUser && <RightSidebar selectedUser={selectedUser} />}
       </div>
     </div>
   );

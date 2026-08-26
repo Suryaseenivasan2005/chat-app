@@ -14,8 +14,6 @@ export const AuthProvider = ({ children }) => {
   const [authUser, setAuthUser] = useState(null);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState('default');
 
   // ✅ Ensure token is sent correctly before calling checkAuth
@@ -25,17 +23,6 @@ export const AuthProvider = ({ children }) => {
       checkAuth();
     }
   }, [token]); // ✅ Watch token instead of empty array
-
-  // Listen for PWA install prompt
-  useEffect(() => {
-    const handler = (e) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallBanner(true);
-    };
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, []);
 
   // Request notification permission on load (silently)
   useEffect(() => {
@@ -151,14 +138,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const choice = await deferredPrompt.userChoice;
-    setShowInstallBanner(false);
-    setDeferredPrompt(null);
-  };
-
   const value = {
     axios,
     authUser,
@@ -168,24 +147,11 @@ export const AuthProvider = ({ children }) => {
     loginDemo,
     logout,
     updateProfile,
-    showInstallBanner,
-    handleInstallClick,
   };
 
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {showInstallBanner && (
-        <div className="fixed bottom-6 right-6 z-50 bg-[#282142] text-white p-4 rounded-lg shadow-lg flex items-center gap-3">
-          <div>
-            <p className="font-semibold">Install</p>
-          </div>
-          <div className="ml-3">
-            <button onClick={handleInstallClick} className="bg-green-600 px-3 py-1 rounded-md">Install</button>
-            <button onClick={() => setShowInstallBanner(false)} className="ml-2 text-sm text-gray-300">Close</button>
-          </div>
-        </div>
-      )}
     </AuthContext.Provider>
   );
 };

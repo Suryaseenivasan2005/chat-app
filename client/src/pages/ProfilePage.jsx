@@ -118,20 +118,14 @@ const ProfilePage = () => {
 
   return (
     <div className="min-h-screen bg-[#1a1a2e] bg-cover bg-no-repeat flex items-center justify-center p-4">
-      {/* Demo Mode Banner */}
+      {/* Small fixed demo timer pill — same as HomePage */}
       {authUser?.isDemo && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-600/90 to-indigo-600/90 backdrop-blur-sm text-white text-center py-2.5 px-4 text-sm font-semibold flex items-center justify-center gap-2 shadow-lg">
-          <span>🔒 Demo Mode</span>
-          <span className="text-purple-200 font-normal">— Profile editing is disabled.</span>
-          <button
-            onClick={() => navigate('/login')}
-            className="ml-3 bg-white/20 hover:bg-white/30 px-3 py-0.5 rounded-lg text-xs font-bold transition-all"
-          >
-            Sign in to unlock →
-          </button>
+        <div className="fixed top-3 right-3 z-50 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold bg-black/50 text-purple-200 border border-purple-500/30 shadow-lg backdrop-blur-sm pointer-events-none select-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block" />
+          Demo
         </div>
       )}
-      <div className={`w-full max-w-4xl backdrop-blur-3xl bg-white/5 text-gray-100 border border-white/10 flex items-stretch gap-0 max-md:flex-col-reverse rounded-3xl overflow-hidden shadow-2xl ${authUser?.isDemo ? 'mt-12' : ''}`}>
+      <div className="w-full max-w-4xl backdrop-blur-3xl bg-white/5 text-gray-100 border border-white/10 flex items-stretch gap-0 max-md:flex-col-reverse rounded-3xl overflow-hidden shadow-2xl">
         <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-8 md:p-12 flex-1 bg-black/20">
           <div>
             <h3 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Profile Details</h3>

@@ -112,10 +112,24 @@ export const getUsers = async (req, res) => {
   try {
     const currentUserId = req.user._id;
 
-    // Determine user query based on if current user is a demo user
-    const userQuery = req.user.isDemo
-      ? { _id: { $ne: currentUserId }, isBot: true }
-      : { _id: { $ne: currentUserId }, isBot: { $ne: true } };
+    // Determine user query based on if current user is a demo user.
+    // Demo users only see: bots OR other demo contacts that are their friends.
+    // Real users see all non-bot users.
+    let userQuery;
+    if (req.user.isDemo) {
+      // Get IDs of accepted friends for this demo user
+      const acceptedFriendships = await FriendRequest.find({
+        $or: [{ senderId: req.user._id }, { receiverId: req.user._id }],
+        status: "accepted"
+      });
+      const friendIds = acceptedFriendships.map(f =>
+        f.senderId.toString() === req.user._id.toString() ? f.receiverId : f.senderId
+      );
+      // Only show friends (bot + demo peers)
+      userQuery = { _id: { $in: friendIds } };
+    } else {
+      userQuery = { _id: { $ne: currentUserId }, isBot: { $ne: true }, isDemo: { $ne: true } };
+    }
 
     const users = await User.find(userQuery)
       .select('fullName email bio profilePic') // Select only needed fields
@@ -160,62 +174,135 @@ export const getUsers = async (req, res) => {
 // Demo login and setup
 export const loginDemo = async (req, res) => {
   try {
-    // 1. Cleanup expired demo users
+    // 1. Cleanup expired demo users (isDemo=true, older than 15 min)
     const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000);
     const expiredUsers = await User.find({ isDemo: true, createdAt: { $lt: fifteenMinsAgo } });
-    
+
     if (expiredUsers.length > 0) {
       const expiredUserIds = expiredUsers.map(u => u._id);
-      
-      // Delete their messages
       await Message.deleteMany({ $or: [{ senderId: { $in: expiredUserIds } }, { receiverId: { $in: expiredUserIds } }] });
-      
-      // Delete their friend requests
       await FriendRequest.deleteMany({ $or: [{ senderId: { $in: expiredUserIds } }, { receiverId: { $in: expiredUserIds } }] });
-      
-      // Delete the users
       await User.deleteMany({ _id: { $in: expiredUserIds } });
-      console.log(`Cleaned up ${expiredUsers.length} expired demo users.`);
+      console.log(`[Demo] Cleaned up ${expiredUsers.length} expired demo users.`);
     }
 
-    // 2. Create new Demo User
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const email = `demo_${Date.now()}@talklet.app`;
-    const password = await bcrypt.hash("demo_password_123", 10);
+    // 2. Create the Demo User (the visitor)
+    const ts = Date.now();
+    const password = await bcrypt.hash("demo_internal_pass", 10);
 
     const demoUser = await User.create({
-      fullName: `Demo User ${randomSuffix}`,
-      email,
+      fullName: `Guest Explorer`,
+      email: `demo_${ts}@talklet.app`,
       password,
-      bio: "I'm checking out Talklet in Demo mode! 🚀",
-      isDemo: true
+      bio: "👀 Exploring Talklet in Demo Mode",
+      profilePic: "https://api.dicebear.com/7.x/avataaars/svg?seed=guest",
+      isDemo: true,
     });
 
-    // 3. Find Bumble Bee bot
-    const bot = await User.findOne({ isBot: true });
-    
-    if (bot) {
-      // Create accepted friend request between Demo User and Bot
-      await FriendRequest.create({
-        senderId: demoUser._id,
-        receiverId: bot._id,
-        status: "accepted"
-      });
+    // 3. Seed 3 realistic demo peer contacts (also flagged isDemo for cleanup)
+    const peers = await User.insertMany([
+      {
+        fullName: "Alice Morgan",
+        email: `alice_${ts}@talklet.app`,
+        password,
+        bio: "Designer & coffee lover ☕",
+        profilePic: "https://api.dicebear.com/7.x/avataaars/svg?seed=alice",
+        isDemo: true,
+      },
+      {
+        fullName: "Liam Chen",
+        email: `liam_${ts}@talklet.app`,
+        password,
+        bio: "Full-stack dev | open source 🛠️",
+        profilePic: "https://api.dicebear.com/7.x/avataaars/svg?seed=liam",
+        isDemo: true,
+      },
+      {
+        fullName: "Sophie Ramos",
+        email: `sophie_${ts}@talklet.app`,
+        password,
+        bio: "Travel & photography 📸",
+        profilePic: "https://api.dicebear.com/7.x/avataaars/svg?seed=sophie",
+        isDemo: true,
+      },
+    ]);
 
-      // Send a welcome message from the bot
+    const [alice, liam, sophie] = peers;
+
+    // 4. Create accepted friendships between demoUser and each peer
+    await FriendRequest.insertMany([
+      { senderId: demoUser._id, receiverId: alice._id, status: "accepted" },
+      { senderId: demoUser._id, receiverId: liam._id,  status: "accepted" },
+      { senderId: demoUser._id, receiverId: sophie._id, status: "accepted" },
+    ]);
+
+    // 5. Also connect demoUser with Bumble Bee bot
+    const bot = await User.findOne({ isBot: true });
+    if (bot) {
+      await FriendRequest.create({ senderId: demoUser._id, receiverId: bot._id, status: "accepted" });
+    }
+
+    // Helper: create a sequence of messages with staggered timestamps
+    const seedChat = async (partnerA, partnerB, lines) => {
+      const now = Date.now();
+      const bulk = lines.map(([from, text], i) => ({
+        senderId: from === 'user' ? demoUser._id : partnerA._id,
+        receiverId: from === 'user' ? partnerA._id : demoUser._id,
+        text,
+        isGroupMessage: false,
+        createdAt: new Date(now - (lines.length - i) * 3 * 60 * 1000), // 3 min apart
+        updatedAt: new Date(now - (lines.length - i) * 3 * 60 * 1000),
+      }));
+      await Message.insertMany(bulk);
+    };
+
+    // Alice — design / casual chat
+    await seedChat(alice, demoUser, [
+      ['peer', "Hey! Did you check out the new Figma update? 🎨"],
+      ['user',  "Not yet, what's new in it?"],
+      ['peer', "They added AI-powered layout suggestions. Kinda wild honestly"],
+      ['user',  "Sounds useful! I'll check it out later"],
+      ['peer', "Yeah let me know what you think. Also — are we still on for the design review Friday?"],
+      ['user',  "Yep, 2 PM works for me 👍"],
+      ['peer', "Perfect. I'll send the Figma link before then"],
+    ]);
+
+    // Liam — tech / dev chat
+    await seedChat(liam, demoUser, [
+      ['peer', "Yo, have you tried the new Vite 6 release?"],
+      ['user',  "Just saw the changelog. HMR changes look 🔥"],
+      ['peer', "It's so fast now. Cold start is almost instant"],
+      ['user',  "I might migrate the side project this weekend"],
+      ['peer', "Do it. Let me know if you hit any breaking changes, I already migrated two projects"],
+      ['user',  "Appreciate it, will ping you 🤙"],
+    ]);
+
+    // Sophie — friendly / personal chat
+    await seedChat(sophie, demoUser, [
+      ['peer', "Just landed in Lisbon 🇵🇹 it's gorgeous here"],
+      ['user',  "No way! How long are you staying?"],
+      ['peer', "A week. The light here is perfect for photography"],
+      ['user',  "I'm so jealous 😂 send pics!"],
+      ['peer', "Haha will do. You should come next time, it's super affordable"],
+      ['user',  "Adding it to my list 📋"],
+    ]);
+
+    // Bumble Bee welcome
+    if (bot) {
       await Message.create({
         senderId: bot._id,
         receiverId: demoUser._id,
-        text: "Hi there! 👋 Welcome to Talklet's Demo Mode. I'm Bumble Bee. Feel free to send me messages here. Note that your session and data will be automatically reset after 15 minutes.",
-        isGroupMessage: false
+        text: "Hi there! 👋 I'm Bumble Bee, your AI assistant on Talklet. This is a 15-minute demo session — feel free to explore. Your data resets automatically when it ends.",
+        isGroupMessage: false,
       });
     }
 
-    // 4. Generate token and return
+    // 6. Return token
     const token = generateToken(demoUser._id);
-    res.json({ success: true, userData: demoUser, token, message: "Demo session started successfully" });
+    res.json({ success: true, userData: demoUser, token, message: "Demo session started!" });
   } catch (err) {
-    console.error("Demo login error:", err);
+    console.error("[Demo] Error:", err);
     res.status(500).json({ success: false, message: "Failed to start demo session" });
   }
 };
+

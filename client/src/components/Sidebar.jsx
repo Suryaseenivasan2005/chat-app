@@ -10,7 +10,7 @@ import InviteModal from './InviteModal';
 
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, unseenMessages = {} } = useContext(ChatContext);
-  const { logout, onlineUsers } = useContext(AuthContext);
+  const { logout, onlineUsers, authUser } = useContext(AuthContext);
   const { notifications, setShowNotificationModal } = useContext(NotificationContext);
   const [input, setInput] = useState('');
   const [showMenu, setShowMenu] = useState(false);
@@ -126,7 +126,9 @@ const Sidebar = () => {
           {/* All Users (including Bumble Bee when active) - sorted by last message */}
           {filteredUsers
             .filter(user => {
-              // Hide bot until it's activated, then keep it forever
+              // In demo mode, always show all contacts (bot is always visible)
+              if (authUser?.isDemo) return true;
+              // For normal users: hide bot until it's been activated
               if (user.isBot && !isBumbleBeeActive) return false;
               return true;
             })
@@ -193,14 +195,16 @@ const Sidebar = () => {
       {/* Fixed Bottom Section */}
       <div className="relative">
         <div className="sticky bottom-0 w-full bg-[#8185B2]/10 p-4 flex gap-2 border-t border-[#282142]">
-          {/* Add Friend Button - compact */}
-          <button
-            onClick={() => navigate('/friends/request')}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-green-700 transition-colors duration-300 shadow-lg"
-          >
-            <span className="text-white text-sm font-medium">Discover</span>
-            <span className="text-white text-lg">+</span>
-          </button>
+          {/* Add Friend Button — hidden in demo mode */}
+          {!authUser?.isDemo && (
+            <button
+              onClick={() => navigate('/friends/request')}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-blue-600 hover:bg-green-700 transition-colors duration-300 shadow-lg"
+            >
+              <span className="text-white text-sm font-medium">Discover</span>
+              <span className="text-white text-lg">+</span>
+            </button>
+          )}
 
           {/* Invite Friends Button */}
           <button

@@ -211,6 +211,12 @@ const Chatbox = () => {
   const handleCall = async () => {
     if (!selectedUser) return;
 
+    // Calls are disabled in Demo Mode
+    if (authUser?.isDemo) {
+      toast.error('🔒 Voice calls require sign-in. Demo mode only!');
+      return;
+    }
+
     if (!onlineUsers.includes(selectedUser._id)) {
       toast.error("User is offline");
       return;
@@ -221,6 +227,12 @@ const Chatbox = () => {
 
   const handleVideoCall = async () => {
     if (!selectedUser) return;
+
+    // Video calls are disabled in Demo Mode
+    if (authUser?.isDemo) {
+      toast.error('🔒 Video calls require sign-in. Demo mode only!');
+      return;
+    }
 
     if (!onlineUsers.includes(selectedUser._id)) {
       toast.error("User is offline");
