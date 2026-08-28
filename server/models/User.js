@@ -8,7 +8,9 @@ const userSchema = new mongoose.Schema({
   bio: { type: String },
   backgroundImage: { type: String, default: "" },
   isBot: { type: Boolean, default: false },
-  isDemo: { type: Boolean, default: false }
+  isDemo: { type: Boolean, default: false },
+  // Links demo users to their session for isolation & cleanup
+  demoSessionId: { type: mongoose.Schema.Types.ObjectId, ref: "DemoSession", default: null }
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);

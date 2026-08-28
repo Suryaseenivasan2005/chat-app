@@ -8,7 +8,9 @@ import userRouter from "./routes/userRoutes.js";
 import messageRouter from "./routes/messageRoutes.js";
 import groupRouter from "./routes/groupRoutes.js";
 import friendRouter from "./routes/friendRoutes.js";
+import demoRouter from "./routes/demoRoutes.js";
 import Message from "./models/message.js";
+import { cleanupExpiredSessions } from "./controller/demoController.js";
 
 // Create Express App and HTTp server
 const app = express();
@@ -136,6 +138,7 @@ app.use("/api/users", userRouter);
 app.use("/api/messages", messageRouter);
 app.use("/api/groups", groupRouter);
 app.use("/api/friends", friendRouter);
+app.use("/api/demo", demoRouter);
 
 // Schedule message cleanup (run daily)
 const cleanupMessages = async () => {
@@ -187,8 +190,11 @@ const cleanupMessages = async () => {
   }
 };
 
-// Run cleanup once a day
+// Run cleanup once a day for old chat messages
 setInterval(cleanupMessages, 24 * 60 * 60 * 1000);
+
+// Run demo session cleanup every 30 minutes
+setInterval(cleanupExpiredSessions, 30 * 60 * 1000);
 
 // Connect to MongoDB using generic start logic
 const startServer = async () => {

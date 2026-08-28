@@ -6,7 +6,9 @@ const messageSchema = new mongoose.Schema({
     text: { type: String ,},
     image: {type: String,},
     audio: {type: String,},
-    seen: {type: Boolean, default: false}
+    seen: {type: Boolean, default: false},
+    // Links demo messages to their session for isolated cleanup on RESET/expiry
+    demoSessionId: {type: mongoose.Schema.Types.ObjectId, ref: "DemoSession", default: null}
 },{timestamps: true});
 
 const Message = mongoose.model("Message", messageSchema);

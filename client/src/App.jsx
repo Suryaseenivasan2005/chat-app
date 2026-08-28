@@ -13,9 +13,10 @@ import { NotificationProvider } from '../context/NotificationContext.jsx'
 import CallingInterface from './components/CallingInterface.jsx'
 import NotificationModal from './components/NotificationModal.jsx'
 import DemoIntroPage from './pages/DemoIntroPage.jsx'
+import DemoExpiredPage from './pages/DemoExpiredPage.jsx'
 
 const App = () => {
-  const { authUser } = useContext(AuthContext)
+  const { authUser, demoExpired } = useContext(AuthContext)
   
   return (
     <CallingProvider>
@@ -24,6 +25,10 @@ const App = () => {
           <Toaster />
           <CallingInterface />
           <NotificationModal />
+
+          {/* Global demo expiry overlay — sits above everything when shown */}
+          {demoExpired && <DemoExpiredPage />}
+
           <Routes>
             <Route path="/" element={authUser ? <HomePage /> : <Navigate to="/login" />} />
             <Route path="/login" element={!authUser ? <LoginPage /> : <Navigate to="/" />} />

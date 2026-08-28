@@ -2,9 +2,11 @@ import axios from "axios";
 import Message from "../models/message.js";
 import User from "../models/User.js";
 import Group from "../models/group.js";
+import DemoSession from "../models/DemoSession.js";
 import cloudinary from "../lib/cloudinary.js";
 import { io, userSocketMap } from "../server.js";
 import googleAIConfig from "../lib/googleAIConfig.js";
+import { getFakePeerResponse } from "./demoController.js";
 
 // Web search function
 async function performWebSearch(query) {
@@ -418,41 +420,91 @@ export const sendMessage = async (req, res) => {
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
     const { text, image, audio } = req.body;
+    const isDemo = req.user.isDemo;
+    const demoSession = req.demoSession; // set by protectRoute for demo users
+    const demoSessionId = demoSession?._id ?? null;
 
     let newMessage;
 
     if (image) {
-      const uploadResult = await cloudinary.uploader.upload(image);
-      newMessage = await Message.create({
-        senderId,
-        receiverId,
-        text,
-        image: uploadResult.secure_url
-      });
+      if (isDemo) {
+        // Demo mode: store image data directly, skip Cloudinary
+        newMessage = await Message.create({ senderId, receiverId, text, image, demoSessionId });
+      } else {
+        const uploadResult = await cloudinary.uploader.upload(image);
+        newMessage = await Message.create({ senderId, receiverId, text, image: uploadResult.secure_url });
+      }
     } else if (audio) {
-      const uploadAudio = await cloudinary.uploader.upload(audio, { resource_type: "video" });
-      newMessage = await Message.create({ senderId, receiverId, text, audio: uploadAudio.secure_url });
+      if (isDemo) {
+        newMessage = await Message.create({ senderId, receiverId, text, audio, demoSessionId });
+      } else {
+        const uploadAudio = await cloudinary.uploader.upload(audio, { resource_type: "video" });
+        newMessage = await Message.create({ senderId, receiverId, text, audio: uploadAudio.secure_url });
+      }
     } else {
-      newMessage = await Message.create({ senderId, receiverId, text });
+      newMessage = await Message.create({ senderId, receiverId, text, demoSessionId });
     }
 
-    // ✅ If chatting with Bumble Bee, get AI reply
     const receiverUser = await User.findById(receiverId);
+
+    // ✅ If chatting with Bumble Bee, get AI reply
     if (receiverUser?.isBot) {
-      const aiText = await getAIResponse(text);
-      // increase delay to 2 seconds to ensure ordering below user's message
+      let aiText;
+
+      if (isDemo && demoSession) {
+        const DEMO_BB_LIMIT = 20;
+        if (demoSession.bumblebeeRequestCount >= DEMO_BB_LIMIT) {
+          // Rate limit hit — use simple fallback
+          aiText = await getSimpleAIResponse(text);
+        } else {
+          aiText = await getAIResponse(text);
+          await DemoSession.findByIdAndUpdate(demoSession._id, { $inc: { bumblebeeRequestCount: 1 } });
+        }
+      } else {
+        aiText = await getAIResponse(text);
+      }
+
       await new Promise((r) => setTimeout(r, 500));
       const aiMessage = await Message.create({
         senderId: receiverId,
         receiverId: senderId,
         text: aiText,
-        seen: true
+        seen: true,
+        demoSessionId,
       });
 
       const senderSocketId = userSocketMap[senderId.toString()];
       if (senderSocketId) {
         io.to(senderSocketId).emit("newMessage", aiMessage);
       }
+    }
+
+    // ✅ For demo: fire a fake peer response from non-bot contacts
+    if (isDemo && receiverUser && !receiverUser.isBot && text) {
+      const delayMs = 1500 + Math.random() * 2000; // 1.5–3.5 second human-like delay
+      setTimeout(async () => {
+        try {
+          const reply = getFakePeerResponse(receiverUser.fullName);
+          const fakeReply = await Message.create({
+            senderId: receiverId,
+            receiverId: senderId,
+            text: reply,
+            seen: false,
+            demoSessionId,
+          });
+          const senderSocket = userSocketMap[senderId.toString()];
+          if (senderSocket) {
+            // Briefly emit typing indicator, then the message
+            io.to(senderSocket).emit("typing", { from: receiverId.toString() });
+            setTimeout(() => {
+              io.to(senderSocket).emit("stop_typing", { from: receiverId.toString() });
+              io.to(senderSocket).emit("newMessage", fakeReply);
+            }, 800);
+          }
+        } catch (err) {
+          console.error("[Demo] Fake reply error:", err.message);
+        }
+      }, delayMs);
     }
 
     const receiverSocketId = userSocketMap[receiverId.toString()];
@@ -491,18 +543,47 @@ export const getMessage = async (req, res) => {
 export const getUserForSidebar = async (req, res) => {
   try {
     const currentUserId = req.user._id.toString();
+    const isDemo = req.user.isDemo;
+    const demoSession = req.demoSession;
+
+    // ── Demo mode: return only this session's peers + bot ──────────────────
+    if (isDemo && demoSession) {
+      const bot = await User.findOne({ isBot: true });
+      const peers = await User.find({ _id: { $in: demoSession.peerIds } });
+
+      const allUsers = bot ? [...peers, bot] : peers;
+
+      // Sort by most recent message within this demo session
+      const usersWithLastMsg = await Promise.all(allUsers.map(async (u) => {
+        const lastMsg = await Message.findOne({
+          demoSessionId: demoSession._id,
+          $or: [
+            { senderId: currentUserId, receiverId: u._id },
+            { senderId: u._id, receiverId: currentUserId },
+          ],
+        }).sort({ createdAt: -1 }).select("createdAt");
+        return { user: u, lastAt: lastMsg?.createdAt || new Date(0) };
+      }));
+
+      usersWithLastMsg.sort((a, b) => b.lastAt - a.lastAt);
+
+      return res.json({
+        success: true,
+        users: usersWithLastMsg.map((x) => x.user),
+        unseenMessages: {},
+      });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     // Ensure the AI bot exists and is named Bumble Bee
     let bot = await User.findOne({ isBot: true });
 
     if (bot) {
-      // Update name if it's still the old one
       if (bot.fullName !== "Bumble Bee") {
         bot.fullName = "Bumble Bee";
         await bot.save();
       }
     } else {
-      // Create new if doesn't exist
       bot = await User.create({
         fullName: "Bumble Bee",
         profilePic: "/static/chitti.jpg",
@@ -527,9 +608,10 @@ export const getUserForSidebar = async (req, res) => {
       req.senderId.toString() === currentUserId ? req.receiverId : req.senderId
     );
 
-    // Fetch accepted friends and bot
+    // Fetch accepted friends and bot — exclude any demo users
     let users = await User.find({
-      _id: { $in: [...friendIds, bot._id] }
+      _id: { $in: [...friendIds, bot._id] },
+      isDemo: { $ne: true },
     });
 
     // Fetch groups where current user is a member and mix into users array
@@ -545,6 +627,7 @@ export const getUserForSidebar = async (req, res) => {
     // Sort users by most recent message with current user
     const usersWithLastMessage = await Promise.all(users.map(async (u) => {
       const lastMsg = await Message.findOne({
+        demoSessionId: null, // only production messages
         $or: [
           { senderId: currentUserId, receiverId: u._id },
           { senderId: u._id, receiverId: currentUserId }
