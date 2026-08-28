@@ -14,7 +14,7 @@ function fmt(ms) {
 }
 
 export default function DemoIntroPage() {
-  const { authUser, initDemo, startDemo } = useContext(AuthContext);
+  const { authUser, initDemo, startDemo, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
   // Backend readiness check
@@ -28,12 +28,16 @@ export default function DemoIntroPage() {
   const [isStarting, setIsStarting] = useState(false);
   const [initError, setInitError] = useState(null);
 
-  // Redirect real (non-demo) users to the app
+  // If a real (non-demo) user lands on /demo, log them out silently so
+  // the demo flow can proceed. Without this, they'd be instantly bounced
+  // back to '/' and the /demo page would never appear.
   useEffect(() => {
     if (authUser && !authUser.isDemo) {
-      navigate('/', { replace: true });
+      logout();
+      // logout() clears authUser — the page stays mounted and the demo
+      // init flow runs normally once authUser becomes null.
     }
-  }, [authUser, navigate]);
+  }, [authUser]);
 
   // ── Poll backend readiness ────────────────────────────────────────────────
   useEffect(() => {
@@ -64,7 +68,8 @@ export default function DemoIntroPage() {
 
   // ── Initialize a pending session once server is ready ─────────────────────
   useEffect(() => {
-    if (serverStatus !== 'ready' || pendingSession || isInitializing) return;
+    // Also wait until any real logged-in user has been fully logged out
+    if (serverStatus !== 'ready' || pendingSession || isInitializing || (authUser && !authUser.isDemo)) return;
 
     const init = async () => {
       setIsInitializing(true);
@@ -79,7 +84,7 @@ export default function DemoIntroPage() {
     };
 
     init();
-  }, [serverStatus]);
+  }, [serverStatus, authUser]);
 
   // ── CONTINUE DEMO click ───────────────────────────────────────────────────
   const handleContinue = async () => {
